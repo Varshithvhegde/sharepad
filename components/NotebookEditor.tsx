@@ -102,6 +102,8 @@ export default function NotebookEditor({
   const stats = readingStats(isEdit ? content : activePage?.content ?? "");
   const paperClass = TEXTURE_CLASS[notebook.theme] ?? "paper-plain";
   const typeClass = fontClass(notebook.font);
+  // A one-page notebook has nothing to navigate, so readers get the full width.
+  const showIndex = isEdit || pages.length > 1;
 
   // Requests carry the token only when we actually have one.
   const authHeaders = useMemo<Record<string, string>>(() => {
@@ -352,13 +354,15 @@ export default function NotebookEditor({
           backdropFilter: "blur(6px)",
         }}
       >
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="btn-ghost lg:hidden !px-2"
-          aria-label="Show pages"
-        >
-          <Menu size={18} />
-        </button>
+        {showIndex && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="btn-ghost lg:hidden !px-2"
+            aria-label="Show pages"
+          >
+            <Menu size={18} />
+          </button>
+        )}
 
         <Link href="/" className="hidden sm:block shrink-0 text-[1.15rem]" style={{ fontFamily: "var(--font-sketch), serif" }}>
           SharePad
@@ -529,7 +533,7 @@ export default function NotebookEditor({
         <aside
           className={`${
             sidebarOpen ? "fixed inset-0 z-50 flex" : "hidden"
-          } lg:relative lg:flex lg:z-auto shrink-0 no-print`}
+          } ${showIndex ? "lg:relative lg:flex lg:z-auto" : ""} shrink-0 no-print`}
         >
           {sidebarOpen && (
             <div className="absolute inset-0 lg:hidden" style={{ background: "rgba(28,28,28,0.35)" }} onClick={() => setSidebarOpen(false)} />
@@ -768,8 +772,10 @@ export default function NotebookEditor({
 
             {(!isEdit || viewMode === "split" || viewMode === "read") && (
               <div className={`flex-1 overflow-y-auto ${paperClass} ${typeClass}`}>
-                <div className="margin-rule min-h-full">
-                  <div className="max-w-2xl mx-auto px-5 sm:pl-16 sm:pr-8 py-8">
+                {/* The rule belongs to the text column, so it stays beside the words. */}
+                <div className="margin-rule min-h-full mx-auto w-full max-w-3xl">
+                  <div className="pl-12 pr-5 sm:pl-16 sm:pr-10 py-8">
+
                     {!isOwner && (
                       <p className="text-[0.8rem] mb-6" style={{ color: "var(--ink-3)" }}>
                         {notebook.view_count} {notebook.view_count === 1 ? "view" : "views"}
