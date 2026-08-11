@@ -26,6 +26,8 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
     setTimeout(() => setCopied(null), 2000);
   }
 
+  // Visitors to an openly editable notebook can share it, but they hold no
+  // token, so there is no edit link to offer them.
   const links = [
     {
       key: "view",
@@ -34,13 +36,17 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
       url: viewUrl,
       tint: "var(--sticky-b)",
     },
-    {
-      key: "edit",
-      label: "Edit link",
-      hint: "Your key. Anyone with it can change everything.",
-      url: editUrl,
-      tint: "var(--sticky-p)",
-    },
+    ...(editToken
+      ? [
+          {
+            key: "edit",
+            label: "Edit link",
+            hint: "Your key. Anyone with it can change everything.",
+            url: editUrl,
+            tint: "var(--sticky-p)",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -108,6 +114,16 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
                 </div>
               </div>
             ))}
+
+            {!editToken && (
+              <p
+                className="text-[0.84rem] p-3 mb-5"
+                style={{ background: "var(--paper-2)", border: "1.2px solid rgba(28,28,28,0.15)", color: "var(--ink-2)" }}
+              >
+                You are sharing someone else&apos;s notebook. They kept the edit link, so
+                only the address above is yours to pass on.
+              </p>
+            )}
 
             <div className="flex items-center gap-3 mb-5">
               <button onClick={() => setShowQr((v) => !v)} className="btn-ghost !px-0 text-[0.88rem]">
