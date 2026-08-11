@@ -20,7 +20,7 @@ One link. Many pages. Password lock. Embed anywhere.
 
 ```bash
 # Clone
-git clone https://github.com/varshithvhegde/sharepad.git
+git clone https://github.com/Varshithvhegde/sharepad.git
 cd sharepad
 
 # Install
@@ -72,4 +72,4 @@ MIT
 
 ## Author
 
-[Varshith Hegde](https://github.com/varshithvhegde)
+[Varshith Hegde](https://github.com/Varshithvhegde)

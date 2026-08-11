@@ -150,4 +150,4 @@ view_events   — notebook_id, fingerprint (for unique views)
 
 ## Repo
 
-GitHub: [varshithvhegde/sharepad](https://github.com/varshithvhegde/sharepad)
+GitHub: [Varshithvhegde/sharepad](https://github.com/Varshithvhegde/sharepad)

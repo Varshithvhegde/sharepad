@@ -201,11 +201,11 @@ export default function HomePage() {
       <footer className="border-t border-[var(--border)] py-8 px-6 text-center text-xs text-[var(--ink-3)]">
         <p>
           Built by{" "}
-          <a href="https://github.com/varshithvhegde" className="text-[var(--accent)] hover:underline">
-            varshithvhegde
+          <a href="https://github.com/Varshithvhegde" className="text-[var(--accent)] hover:underline">
+            Varshithvhegde
           </a>
           {" · "}
-          <a href="https://github.com/varshithvhegde/sharepad" className="hover:text-[var(--ink-2)]">
+          <a href="https://github.com/Varshithvhegde/sharepad" className="hover:text-[var(--ink-2)]">
             GitHub
           </a>
         </p>
