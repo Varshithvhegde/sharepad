@@ -102,8 +102,6 @@ export default function NotebookEditor({
   const stats = readingStats(isEdit ? content : activePage?.content ?? "");
   const paperClass = TEXTURE_CLASS[notebook.theme] ?? "paper-plain";
   const typeClass = fontClass(notebook.font);
-  // A one-page notebook has nothing to navigate, so readers get the full width.
-  const showIndex = isEdit || pages.length > 1;
 
   // Requests carry the token only when we actually have one.
   const authHeaders = useMemo<Record<string, string>>(() => {
@@ -342,27 +340,26 @@ export default function NotebookEditor({
   const showExpiryWarning = expiringSoon(notebook.expires_at) && !dismissedExpiry;
 
   return (
-    <div className="min-h-screen flex flex-col paper-dot">
+    // Pinned to the viewport so the panes scroll rather than the whole document.
+    <div className="h-dvh flex flex-col overflow-hidden paper-dot">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       {/* ── Header ── */}
       <header
-        className="sticky top-0 z-40 flex items-center gap-2 px-3 sm:px-4 h-14 shrink-0 no-print"
+        className="z-40 flex items-center gap-2 px-3 sm:px-4 h-14 shrink-0 no-print"
         style={{
           borderBottom: "1.5px solid rgba(28,28,28,0.16)",
           background: "rgba(250,249,246,0.94)",
           backdropFilter: "blur(6px)",
         }}
       >
-        {showIndex && (
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="btn-ghost lg:hidden !px-2"
-            aria-label="Show pages"
-          >
-            <Menu size={18} />
-          </button>
-        )}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="btn-ghost lg:hidden !px-2"
+          aria-label="Show pages"
+        >
+          <Menu size={18} />
+        </button>
 
         <Link href="/" className="hidden sm:block shrink-0 text-[1.15rem]" style={{ fontFamily: "var(--font-sketch), serif" }}>
           SharePad
@@ -496,7 +493,7 @@ export default function NotebookEditor({
       {/* Visitors need to know why they can type in someone else's notebook. */}
       {!isOwner && isEdit && (
         <div
-          className="flex items-center gap-2 px-4 py-2 text-[0.86rem] no-print"
+          className="flex items-center gap-2 px-4 py-2 text-[0.86rem] shrink-0 no-print"
           style={{ background: "var(--sticky-b)", borderBottom: "1.5px solid rgba(28,28,28,0.16)" }}
         >
           <Users size={14} className="shrink-0" />
@@ -507,7 +504,7 @@ export default function NotebookEditor({
       {/* ── Expiry warning ── */}
       {showExpiryWarning && (
         <div
-          className="flex items-center gap-3 px-4 py-2 text-[0.88rem] no-print"
+          className="flex items-center gap-3 px-4 py-2 text-[0.88rem] shrink-0 no-print"
           style={{ background: "var(--sticky-o)", borderBottom: "1.5px solid rgba(28,28,28,0.16)" }}
         >
           <span>
@@ -533,7 +530,7 @@ export default function NotebookEditor({
         <aside
           className={`${
             sidebarOpen ? "fixed inset-0 z-50 flex" : "hidden"
-          } ${showIndex ? "lg:relative lg:flex lg:z-auto" : ""} shrink-0 no-print`}
+          } lg:relative lg:flex lg:z-auto shrink-0 no-print`}
         >
           {sidebarOpen && (
             <div className="absolute inset-0 lg:hidden" style={{ background: "rgba(28,28,28,0.35)" }} onClick={() => setSidebarOpen(false)} />
