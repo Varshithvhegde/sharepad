@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type Params = { params: Promise<{ pageId: string }> };
+type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
-  const { pageId } = await params;
+  const { id } = await params;
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from("page_versions")
+    .from("comments")
     .select("*")
-    .eq("page_id", pageId)
-    .order("created_at", { ascending: false })
-    .limit(10);
+    .eq("page_id", id)
+    .order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ versions: data });
+  return NextResponse.json({ comments: data });
 }
 
 export async function POST(req: NextRequest, { params }: Params) {
-  const { pageId } = await params;
+  const { id } = await params;
   const { author_name, content } = (await req.json()) as {
     author_name?: string;
     content?: string;
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const admin = createAdminClient();
-  const { data: page } = await admin.from("pages").select("notebook_id").eq("id", pageId).single();
+  const { data: page } = await admin.from("pages").select("notebook_id").eq("id", id).single();
   if (!page) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
@@ -50,7 +49,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { data, error } = await admin
     .from("comments")
     .insert({
-      page_id: pageId,
+      page_id: id,
       author_name: author_name?.trim() || "Anonymous",
       content: content.trim(),
     })
