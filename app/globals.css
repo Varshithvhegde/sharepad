@@ -57,22 +57,29 @@ button {
   background: var(--tape-y);
 }
 
-/* ─── Paper card ─────────────────────────────────────── */
-.sk {
-  position: relative;
-  background: #fff;
-  box-shadow: 3px 4px 0 rgba(28, 28, 28, 0.12), 1px 2px 8px rgba(0, 0, 0, 0.05);
-}
-.sk-b {
-  position: absolute;
-  inset: 0;
-  border: 1.8px solid var(--ink);
-  pointer-events: none;
-  z-index: 2;
-}
-.sk-i {
-  position: relative;
-  z-index: 3;
+/*
+ * ─── Paper card ───────────────────────────────────────
+ * Declared in the components layer so Tailwind utilities still win. Left
+ * unlayered, `.sk { position: relative }` quietly beat `absolute` on dropdowns
+ * and dropped them back into the normal flow.
+ */
+@layer components {
+  .sk {
+    position: relative;
+    background: #fff;
+    box-shadow: 3px 4px 0 rgba(28, 28, 28, 0.12), 1px 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  .sk-b {
+    position: absolute;
+    inset: 0;
+    border: 1.8px solid var(--ink);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .sk-i {
+    position: relative;
+    z-index: 3;
+  }
 }
 
 /* ─── Tape ───────────────────────────────────────────── */

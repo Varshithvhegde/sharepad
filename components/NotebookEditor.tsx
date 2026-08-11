@@ -522,9 +522,11 @@ export default function NotebookEditor({
               <Download size={16} />
             </button>
             {downloadMenu && (
-              <div className="sk absolute top-full right-0 mt-1 z-30 w-52" style={{ background: "#fff" }}>
-                <div className="sk-b" />
-                <div className="sk-i py-1">
+              // .sk is position:relative, so the offset lives on a wrapper.
+              <div className="absolute top-full right-0 mt-1 z-30 w-52">
+                <div className="sk" style={{ background: "#fff" }}>
+                  <div className="sk-b" />
+                  <div className="sk-i py-1">
                   <a
                     href={`/n/${notebook.slug}/print`}
                     target="_blank"
@@ -554,6 +556,7 @@ export default function NotebookEditor({
                       </span>
                     </span>
                   </a>
+                  </div>
                 </div>
               </div>
             )}
@@ -707,20 +710,21 @@ export default function NotebookEditor({
               <div className="p-3 relative" style={{ borderTop: "1.5px solid rgba(28,28,28,0.12)" }}>
                 {templateMenu && (
                   <div
-                    className="sk absolute bottom-full left-3 right-3 mb-2 z-10"
-                    style={{ background: "#fff" }}
+                    className="absolute bottom-full left-3 right-3 mb-2 z-10"
                   >
-                    <div className="sk-b" />
-                    <div className="sk-i py-1">
-                      {PAGE_TEMPLATES.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => addPage(t.id)}
-                          className="w-full text-left px-3 py-2 text-[0.9rem] hover:bg-[var(--paper-2)] flex items-center gap-2"
-                        >
-                          <span>{t.icon}</span> {t.name}
-                        </button>
-                      ))}
+                    <div className="sk" style={{ background: "#fff" }}>
+                      <div className="sk-b" />
+                      <div className="sk-i py-1">
+                        {PAGE_TEMPLATES.map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => addPage(t.id)}
+                            className="w-full text-left px-3 py-2 text-[0.9rem] hover:bg-[var(--paper-2)] flex items-center gap-2"
+                          >
+                            <span>{t.icon}</span> {t.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -748,21 +752,23 @@ export default function NotebookEditor({
                   {activePage.icon}
                 </button>
                 {iconMenu && (
-                  <div className="sk absolute top-full left-0 mt-1 z-20" style={{ background: "#fff" }}>
-                    <div className="sk-b" />
-                    <div className="sk-i grid grid-cols-8 gap-0.5 p-2 w-64">
-                      {PAGE_ICONS.map((ic) => (
-                        <button
-                          key={ic}
-                          onClick={async () => {
-                            await savePage(activePage.id, { icon: ic });
-                            setIconMenu(false);
-                          }}
-                          className="p-1.5 text-[1.05rem] hover:bg-[var(--paper-2)]"
-                        >
-                          {ic}
-                        </button>
-                      ))}
+                  <div className="absolute top-full left-0 mt-1 z-20">
+                    <div className="sk" style={{ background: "#fff" }}>
+                      <div className="sk-b" />
+                      <div className="sk-i grid grid-cols-8 gap-0.5 p-2 w-64">
+                        {PAGE_ICONS.map((ic) => (
+                          <button
+                            key={ic}
+                            onClick={async () => {
+                              await savePage(activePage.id, { icon: ic });
+                              setIconMenu(false);
+                            }}
+                            className="p-1.5 text-[1.05rem] hover:bg-[var(--paper-2)]"
+                          >
+                            {ic}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
