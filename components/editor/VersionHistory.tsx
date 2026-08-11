@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, RotateCcw, X } from "lucide-react";
 import { formatDateTime } from "@/lib/format";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import type { PageVersion } from "@/lib/types";
 
 interface VersionHistoryProps {
@@ -20,6 +21,7 @@ export default function VersionHistory({
 }: VersionHistoryProps) {
   const [versions, setVersions] = useState<PageVersion[]>([]);
   const [loading, setLoading] = useState(true);
+  const { ask, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
     fetch(`/api/pages/${pageId}/versions`, { headers: { "X-Edit-Token": editToken } })
@@ -29,6 +31,8 @@ export default function VersionHistory({
   }, [pageId, editToken]);
 
   return (
+    <>
+    {confirmDialog}
     <div
       className="fixed inset-0 z-50 flex justify-end"
       style={{ background: "rgba(28,28,28,0.35)" }}
@@ -70,8 +74,14 @@ export default function VersionHistory({
                       {formatDateTime(v.created_at)}
                     </span>
                     <button
-                      onClick={() => {
-                        if (confirm("Put this draft back? Your current text is saved to history first.")) {
+                      onClick={async () => {
+                        const ok = await ask({
+                          title: "Put this draft back?",
+                          message:
+                            "What is on the page now is saved to history first, so you can undo this too.",
+                          confirmLabel: "Restore it",
+                        });
+                        if (ok) {
                           onRestore(v.content);
                           onClose();
                         }
@@ -96,5 +106,6 @@ export default function VersionHistory({
         </div>
       </div>
     </div>
+    </>
   );
 }

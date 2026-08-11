@@ -43,6 +43,7 @@ import MarkdownToolbar, { insertMarkdown } from "@/components/editor/MarkdownToo
 import CommentsPanel from "@/components/editor/CommentsPanel";
 import VersionHistory from "@/components/editor/VersionHistory";
 import { ToastContainer, useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { sortPages } from "@/lib/notebooks";
 import { saveNotebook } from "@/lib/local-storage";
 import { PAGE_TEMPLATES, PAGE_ICONS } from "@/lib/templates";
@@ -110,6 +111,7 @@ export default function NotebookEditor({
   const scrollRelease = useRef<ReturnType<typeof setTimeout> | null>(null);
   const anchorCache = useRef<{ key: string; anchors: Anchor[] } | null>(null);
   const { toasts, show: toast, dismiss } = useToast();
+  const { ask, dialog: confirmDialog } = useConfirm();
 
   /*
    * Re-parsing a long document on every keystroke blocks the keypress itself,
@@ -346,7 +348,15 @@ export default function NotebookEditor({
       toast("A notebook needs at least one page", "error");
       return;
     }
-    if (!confirm(`Delete "${page.title}"? This cannot be undone.`)) return;
+
+    const ok = await ask({
+      title: `Delete “${page.title}”?`,
+      message:
+        "The page and its earlier drafts go with it. Everything else in the notebook stays.",
+      confirmLabel: "Delete page",
+      destructive: true,
+    });
+    if (!ok) return;
     const res = await fetch(`/api/pages/${page.id}`, {
       method: "DELETE",
       headers: authHeaders,
@@ -418,7 +428,7 @@ export default function NotebookEditor({
 
       {/* ── Header ── */}
       <header
-        className="z-40 flex items-center gap-2 px-3 sm:px-4 h-14 shrink-0 no-print"
+        className="relative z-40 flex items-center gap-2 px-3 sm:px-4 h-14 shrink-0 no-print"
         style={{
           borderBottom: "1.5px solid rgba(28,28,28,0.16)",
           background: "rgba(250,249,246,0.94)",
@@ -918,6 +928,7 @@ export default function NotebookEditor({
         />
       )}
       {shortcutsOpen && <ShortcutSheet onClose={() => setShortcutsOpen(false)} />}
+      {confirmDialog}
     </div>
   );
 }

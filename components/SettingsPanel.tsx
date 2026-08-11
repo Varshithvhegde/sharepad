@@ -6,6 +6,7 @@ import { Loader2, Trash2, X } from "lucide-react";
 import { removeSavedNotebook } from "@/lib/local-storage";
 import { EXPIRY_OPTIONS, daysUntil, expiryLabel } from "@/lib/expiry";
 import { FONT_OPTIONS } from "@/lib/fonts";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import type { Notebook, NotebookFont, NotebookVisibility, PaperTexture } from "@/lib/types";
 
 interface SettingsPanelProps {
@@ -35,6 +36,7 @@ export default function SettingsPanel({
   onUpdate,
 }: SettingsPanelProps) {
   const router = useRouter();
+  const { ask, dialog: confirmDialog } = useConfirm();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -86,7 +88,15 @@ export default function SettingsPanel({
   }
 
   async function deleteNotebook() {
-    if (!confirm(`Delete "${notebook.title}" and every page in it? This cannot be undone.`)) return;
+    const ok = await ask({
+      title: `Delete “${notebook.title}”?`,
+      message:
+        "Every page, comment and draft goes with it, and the shared link stops working straight away. This cannot be undone.",
+      confirmLabel: "Delete notebook",
+      destructive: true,
+    });
+    if (!ok) return;
+
     setSaving(true);
     const res = await fetch(`/api/notebooks/${notebook.id}`, {
       method: "DELETE",
@@ -104,6 +114,8 @@ export default function SettingsPanel({
   const currentExpiry = daysUntil(notebook.expires_at);
 
   return (
+    <>
+    {confirmDialog}
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-5 overflow-y-auto"
       style={{ background: "rgba(28,28,28,0.4)" }}
@@ -333,5 +345,6 @@ export default function SettingsPanel({
         </div>
       </div>
     </div>
+    </>
   );
 }
