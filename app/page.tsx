@@ -51,6 +51,20 @@ const capabilities = [
     title: "Undo yesterday",
     body: "Every page keeps its last ten drafts. Open the history and put any of them back.",
   },
+  {
+    tape: "b",
+    rot: "-1deg",
+    color: "sn-b",
+    title: "Hand it over",
+    body: "Flip one switch and anyone with the link can write in it too. Handy for a shared list nobody wants to sign up for.",
+  },
+  {
+    tape: "p",
+    rot: "1.2deg",
+    color: "sn-p",
+    title: "Prints like a document",
+    body: "Save the whole notebook as a PDF and the handwriting disappears — clean serif, contents page, one page per sheet.",
+  },
 ];
 
 export default function HomePage() {
@@ -143,16 +157,19 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Link href="/new" className="btn btn-ink text-[1.05rem]">
-                Start a notebook <ArrowRight size={16} />
+              <Link href="/quick" className="btn btn-ink text-[1.05rem]">
+                Paste something now <ArrowRight size={16} />
               </Link>
-              <Link href="/recover" className="btn text-[1.05rem]">
-                Open an existing one
+              <Link href="/new" className="btn text-[1.05rem]">
+                Set one up properly
               </Link>
             </div>
 
             <p className="mt-5 text-[0.85rem]" style={{ color: "var(--ink-3)" }}>
-              Free, and it stays free. Notes expire in 10 days unless you change it.
+              Free, and it stays free. Notes expire in 10 days unless you change it. ·{" "}
+              <Link href="/recover" className="underline">
+                Already have an edit link?
+              </Link>
             </p>
           </div>
 
@@ -287,8 +304,8 @@ export default function HomePage() {
         <ol className="space-y-7">
           {[
             {
-              t: "Name it and claim a link",
-              d: "Type a title, take the link you want, and choose how long it should stick around.",
+              t: "Paste or name it",
+              d: "Drop text straight in and take the link, or set the address, paper and typeface yourself.",
             },
             {
               t: "Fill it with pages",
@@ -296,7 +313,7 @@ export default function HomePage() {
             },
             {
               t: "Pass the view link on",
-              d: "Readers get the whole notebook and can leave comments. You keep the edit link.",
+              d: "Readers get the whole notebook, can leave comments, and can save it as a PDF.",
             },
           ].map((s, i) => (
             <li key={s.t} className="flex gap-5">
@@ -326,9 +343,12 @@ export default function HomePage() {
           ))}
         </ol>
 
-        <div className="mt-12">
-          <Link href="/new" className="btn btn-red text-[1.05rem]">
-            Start a notebook <ArrowRight size={16} />
+        <div className="mt-12 flex flex-wrap gap-3">
+          <Link href="/quick" className="btn btn-red text-[1.05rem]">
+            Paste something now <ArrowRight size={16} />
+          </Link>
+          <Link href="/new" className="btn text-[1.05rem]">
+            Set one up properly
           </Link>
         </div>
       </section>

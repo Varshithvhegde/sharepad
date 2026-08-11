@@ -1,70 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireEditAccess } from "@/lib/api-auth";
+import { requireContentAccess } from "@/lib/api-auth";
 import { generatePageSlug, isValidSlug } from "@/lib/slug";
 import type { CreatePageInput } from "@/lib/types";
 
-export async function POST(req: NextRequest) {
-  const auth = await requireEditAccess(req);
-  if ("error" in auth) return auth.error;
+const MAX_PAGES = 200;
 
-  const body = (await req.json()) as CreatePageInput & { notebook_id: string };
-  if (body.notebook_id !== auth.notebook.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export async function POST(req: NextRequest) {
+  const body = (await req.json()) as CreatePageInput & { notebook_id?: string };
+  if (!body.notebook_id) {
+    return NextResponse.json({ error: "Missing notebook" }, { status: 400 });
+  }
+
+  const access = await requireContentAccess(req, body.notebook_id);
+  if ("error" in access) return access.error;
+
+  const admin = createAdminClient();
+
+  const { count } = await admin
+    .from("pages")
+    .select("*", { count: "exact", head: true })
+    .eq("notebook_id", access.notebook.id);
+
+  if ((count ?? 0) >= MAX_PAGES) {
+    return NextResponse.json(
+      { error: `A notebook can hold ${MAX_PAGES} pages` },
+      { status: 400 }
+    );
   }
 
   const title = body.title?.trim() || "Untitled";
-  let slug = body.slug?.trim() ? body.slug.trim().toLowerCase() : generatePageSlug(title);
-
-  if (!isValidSlug(slug)) {
-    return NextResponse.json({ error: "Invalid page slug" }, { status: 400 });
+  const requested = body.slug?.trim().toLowerCase();
+  if (requested && !isValidSlug(requested)) {
+    return NextResponse.json({ error: "Invalid page link" }, { status: 400 });
   }
 
-  const admin = createAdminClient();
-  const { data: existing } = await admin
+  const { data: last } = await admin
     .from("pages")
     .select("sort_order")
-    .eq("notebook_id", auth.notebook.id)
+    .eq("notebook_id", access.notebook.id)
     .order("sort_order", { ascending: false })
     .limit(1);
 
-  const sortOrder = (existing?.[0]?.sort_order ?? -1) + 1;
+  const sortOrder = (last?.[0]?.sort_order ?? -1) + 1;
 
-  const { data: page, error } = await admin
-    .from("pages")
-    .insert({
-      notebook_id: auth.notebook.id,
-      slug,
-      title,
-      content: body.content || "",
-      icon: body.icon || "📄",
-      sort_order: sortOrder,
-    })
-    .select("*")
-    .single();
+  // Page links are unique per notebook, so retry once with a random suffix.
+  for (const slug of [requested || generatePageSlug(title), generatePageSlug()]) {
+    const { data, error } = await admin
+      .from("pages")
+      .insert({
+        notebook_id: access.notebook.id,
+        slug,
+        title,
+        content: body.content || "",
+        icon: body.icon || "📄",
+        sort_order: sortOrder,
+      })
+      .select("*")
+      .single();
 
-  if (error) {
-    if (error.code === "23505") {
-      slug = generatePageSlug(title);
-      const retry = await admin
-        .from("pages")
-        .insert({
-          notebook_id: auth.notebook.id,
-          slug,
-          title,
-          content: body.content || "",
-          icon: body.icon || "📄",
-          sort_order: sortOrder,
-        })
-        .select("*")
-        .single();
-      if (retry.error) {
-        return NextResponse.json({ error: retry.error.message }, { status: 500 });
-      }
-      return NextResponse.json({ page: retry.data });
+    if (!error) return NextResponse.json({ page: data });
+    if (error.code !== "23505") {
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ page });
+  return NextResponse.json({ error: "Could not add the page" }, { status: 500 });
 }

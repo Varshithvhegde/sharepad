@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, RotateCcw, X } from "lucide-react";
+import { formatDateTime } from "@/lib/format";
 import type { PageVersion } from "@/lib/types";
 
 interface VersionHistoryProps {
@@ -66,7 +67,7 @@ export default function VersionHistory({
                 <div className="sk-i p-3.5">
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <span className="text-[0.78rem]" style={{ color: "var(--ink-3)" }}>
-                      {new Date(v.created_at).toLocaleString()}
+                      {formatDateTime(v.created_at)}
                     </span>
                     <button
                       onClick={() => {

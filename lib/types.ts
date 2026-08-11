@@ -1,4 +1,5 @@
 export type PaperTexture = "ruled" | "grid" | "dot" | "plain";
+export type NotebookFont = "hand" | "serif" | "sans" | "mono";
 export type NotebookVisibility = "public" | "unlisted" | "private";
 
 export interface Notebook {
@@ -8,8 +9,10 @@ export interface Notebook {
   description: string | null;
   emoji: string;
   theme: PaperTexture;
+  font: NotebookFont;
   visibility: NotebookVisibility;
   read_only: boolean;
+  allow_public_edit: boolean;
   burn_after_read: boolean;
   burn_consumed: boolean;
   expires_at: string | null;
@@ -61,7 +64,9 @@ export interface CreateNotebookInput {
   description?: string;
   emoji?: string;
   theme?: PaperTexture;
+  font?: NotebookFont;
   password?: string;
+  allowPublicEdit?: boolean;
   expiresInDays?: number | null;
   pages?: { title: string; icon?: string; content?: string }[];
 }
@@ -71,8 +76,10 @@ export interface UpdateNotebookInput {
   description?: string;
   emoji?: string;
   theme?: PaperTexture;
+  font?: NotebookFont;
   visibility?: NotebookVisibility;
   read_only?: boolean;
+  allow_public_edit?: boolean;
   burn_after_read?: boolean;
   allow_comments?: boolean;
   password?: string | null;

@@ -99,6 +99,23 @@ export const NOTEBOOK_ICONS = [
   "🎨", "🌱", "🗺️", "🔧", "🍜", "🎬", "🏠", "🌍",
 ];
 
+/**
+ * Picks a title out of pasted text: the first heading if there is one,
+ * otherwise the first meaningful line.
+ */
+export function deriveTitle(text: string): string {
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const heading = /^#{1,6}\s+(.+)$/.exec(line);
+    const candidate = (heading ? heading[1] : line)
+      .replace(/[*_`>#\-[\]]/g, "")
+      .trim();
+    if (candidate) return candidate.slice(0, 60);
+  }
+  return "Untitled note";
+}
+
 export const WELCOME_PAGE = (title: string) => `Everything you write here is markdown, and it renders as you type.
 
 ## A few things to try

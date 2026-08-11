@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
+import { formatDate } from "@/lib/format";
 import type { Comment } from "@/lib/types";
 
 const TINTS = ["sn-y", "sn-b", "sn-p", "sn-g", "sn-o"];
@@ -76,7 +77,7 @@ export default function CommentsPanel({ pageId }: { pageId: string }) {
                 <div className="flex items-baseline justify-between gap-3 mb-1">
                   <span className="text-[0.88rem]">{c.author_name}</span>
                   <span className="text-[0.75rem] shrink-0" style={{ color: "var(--ink-3)" }}>
-                    {new Date(c.created_at).toLocaleDateString()}
+                    {formatDate(c.created_at)}
                   </span>
                 </div>
                 <p className="text-[0.92rem] leading-relaxed" style={{ color: "var(--ink-2)" }}>

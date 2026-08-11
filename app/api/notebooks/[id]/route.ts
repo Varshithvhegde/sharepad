@@ -33,8 +33,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (body.description !== undefined) updates.description = body.description?.trim() || null;
   if (body.emoji !== undefined) updates.emoji = body.emoji;
   if (body.theme !== undefined) updates.theme = body.theme;
+  if (body.font !== undefined) updates.font = body.font;
   if (body.visibility !== undefined) updates.visibility = body.visibility;
   if (body.read_only !== undefined) updates.read_only = body.read_only;
+  if (body.allow_public_edit !== undefined) updates.allow_public_edit = body.allow_public_edit;
   if (body.burn_after_read !== undefined) updates.burn_after_read = body.burn_after_read;
   if (body.allow_comments !== undefined) updates.allow_comments = body.allow_comments;
 

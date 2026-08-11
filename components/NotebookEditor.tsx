@@ -9,6 +9,8 @@ import {
   Copy,
   Download,
   Eye,
+  FileCode,
+  FileText,
   Files,
   History,
   Loader2,
@@ -22,6 +24,7 @@ import {
   SquareSplitHorizontal,
   Trash2,
   Upload,
+  Users,
   X,
 } from "lucide-react";
 import MarkdownPreview from "@/components/MarkdownPreview";
@@ -36,6 +39,8 @@ import { sortPages } from "@/lib/notebooks";
 import { saveNotebook } from "@/lib/local-storage";
 import { PAGE_TEMPLATES, PAGE_ICONS } from "@/lib/templates";
 import { expiryLabel, expiringSoon } from "@/lib/expiry";
+import { fontClass } from "@/lib/fonts";
+import { formatDate } from "@/lib/format";
 import type { Notebook, Page } from "@/lib/types";
 
 type ViewMode = "write" | "split" | "read";
@@ -80,6 +85,7 @@ export default function NotebookEditor({
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [templateMenu, setTemplateMenu] = useState(false);
   const [iconMenu, setIconMenu] = useState(false);
+  const [downloadMenu, setDownloadMenu] = useState(false);
   const [search, setSearch] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [dismissedExpiry, setDismissedExpiry] = useState(false);
@@ -89,10 +95,20 @@ export default function NotebookEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toasts, show: toast, dismiss } = useToast();
 
-  const isEdit = mode === "edit" && !notebook.read_only;
+  const isOwner = mode === "edit";
+  // Visitors can edit too when the owner has opened the notebook up.
+  const isEdit = (isOwner || notebook.allow_public_edit) && !notebook.read_only;
   const activePage = pages.find((p) => p.id === activePageId);
   const stats = readingStats(isEdit ? content : activePage?.content ?? "");
-  const paperClass = TEXTURE_CLASS[notebook.theme] ?? "paper-ruled";
+  const paperClass = TEXTURE_CLASS[notebook.theme] ?? "paper-plain";
+  const typeClass = fontClass(notebook.font);
+
+  // Requests carry the token only when we actually have one.
+  const authHeaders = useMemo<Record<string, string>>(() => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (editToken) headers["X-Edit-Token"] = editToken;
+    return headers;
+  }, [editToken]);
 
   useEffect(() => {
     if (mode === "edit" && editToken) {
@@ -127,7 +143,7 @@ export default function NotebookEditor({
       try {
         const res = await fetch(`/api/pages/${pageId}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", "X-Edit-Token": editToken },
+          headers: authHeaders,
           body: JSON.stringify(updates),
         });
         const data = await res.json();
@@ -144,7 +160,7 @@ export default function NotebookEditor({
       setSaveStatus("idle");
       return false;
     },
-    [editToken, isEdit, toast]
+    [authHeaders, isEdit, toast]
   );
 
   useEffect(() => {
@@ -204,6 +220,7 @@ export default function NotebookEditor({
         setShortcutsOpen(false);
         setTemplateMenu(false);
         setIconMenu(false);
+        setDownloadMenu(false);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -215,7 +232,7 @@ export default function NotebookEditor({
     setTemplateMenu(false);
     const res = await fetch("/api/pages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Edit-Token": editToken },
+      headers: authHeaders,
       body: JSON.stringify({
         notebook_id: notebook.id,
         title: tpl.title,
@@ -236,7 +253,7 @@ export default function NotebookEditor({
   async function duplicatePage(page: Page) {
     const res = await fetch("/api/pages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Edit-Token": editToken },
+      headers: authHeaders,
       body: JSON.stringify({
         notebook_id: notebook.id,
         title: `${page.title} copy`,
@@ -260,7 +277,7 @@ export default function NotebookEditor({
     if (!confirm(`Delete "${page.title}"? This cannot be undone.`)) return;
     const res = await fetch(`/api/pages/${page.id}`, {
       method: "DELETE",
-      headers: { "X-Edit-Token": editToken },
+      headers: authHeaders,
     });
     if (res.ok) {
       const remaining = pages.filter((p) => p.id !== page.id);
@@ -285,12 +302,12 @@ export default function NotebookEditor({
     await Promise.all([
       fetch(`/api/pages/${page.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", "X-Edit-Token": editToken },
+        headers: authHeaders,
         body: JSON.stringify({ sort_order: other.sort_order }),
       }),
       fetch(`/api/pages/${other.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", "X-Edit-Token": editToken },
+        headers: authHeaders,
         body: JSON.stringify({ sort_order: page.sort_order }),
       }),
     ]);
@@ -299,7 +316,7 @@ export default function NotebookEditor({
   async function togglePin(page: Page) {
     const res = await fetch(`/api/pages/${page.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "X-Edit-Token": editToken },
+      headers: authHeaders,
       body: JSON.stringify({ pinned: !page.pinned }),
     });
     const data = await res.json();
@@ -358,7 +375,7 @@ export default function NotebookEditor({
               onBlur={() =>
                 fetch(`/api/notebooks/${notebook.id}`, {
                   method: "PATCH",
-                  headers: { "Content-Type": "application/json", "X-Edit-Token": editToken },
+                  headers: authHeaders,
                   body: JSON.stringify({ title: notebook.title }),
                 })
               }
@@ -412,23 +429,76 @@ export default function NotebookEditor({
             )}
           </span>
 
-          {isEdit && (
-            <>
-              <button onClick={() => setShareOpen(true)} className="btn-ghost" title="Share">
-                <Share2 size={16} />
-              </button>
-              <button onClick={() => setSettingsOpen(true)} className="btn-ghost" title="Settings">
-                <SettingsIcon size={16} />
-              </button>
-            </>
-          )}
-          {!isEdit && (
-            <a href={`/api/export/${notebook.slug}`} download className="btn-ghost" title="Download as markdown">
+          <div className="relative">
+            <button
+              onClick={() => setDownloadMenu((v) => !v)}
+              className="btn-ghost"
+              title="Download"
+              aria-expanded={downloadMenu}
+            >
               <Download size={16} />
-            </a>
+            </button>
+            {downloadMenu && (
+              <div className="sk absolute top-full right-0 mt-1 z-30 w-52" style={{ background: "#fff" }}>
+                <div className="sk-b" />
+                <div className="sk-i py-1">
+                  <a
+                    href={`/n/${notebook.slug}/print`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setDownloadMenu(false)}
+                    className="flex items-start gap-2.5 px-3 py-2 hover:bg-[var(--paper-2)]"
+                  >
+                    <FileText size={14} className="mt-0.5 shrink-0" />
+                    <span>
+                      <span className="block text-[0.9rem]">PDF</span>
+                      <span className="block text-[0.76rem]" style={{ color: "var(--ink-3)" }}>
+                        Every page, formatted for print
+                      </span>
+                    </span>
+                  </a>
+                  <a
+                    href={`/api/export/${notebook.slug}`}
+                    download
+                    onClick={() => setDownloadMenu(false)}
+                    className="flex items-start gap-2.5 px-3 py-2 hover:bg-[var(--paper-2)]"
+                  >
+                    <FileCode size={14} className="mt-0.5 shrink-0" />
+                    <span>
+                      <span className="block text-[0.9rem]">Markdown</span>
+                      <span className="block text-[0.76rem]" style={{ color: "var(--ink-3)" }}>
+                        One .md file
+                      </span>
+                    </span>
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {isEdit && (
+            <button onClick={() => setShareOpen(true)} className="btn-ghost" title="Share">
+              <Share2 size={16} />
+            </button>
+          )}
+          {isOwner && (
+            <button onClick={() => setSettingsOpen(true)} className="btn-ghost" title="Settings">
+              <SettingsIcon size={16} />
+            </button>
           )}
         </div>
       </header>
+
+      {/* Visitors need to know why they can type in someone else's notebook. */}
+      {!isOwner && isEdit && (
+        <div
+          className="flex items-center gap-2 px-4 py-2 text-[0.86rem] no-print"
+          style={{ background: "var(--sticky-b)", borderBottom: "1.5px solid rgba(28,28,28,0.16)" }}
+        >
+          <Users size={14} className="shrink-0" />
+          <span>The owner left this notebook open — anything you write is saved for everyone.</span>
+        </div>
+      )}
 
       {/* ── Expiry warning ── */}
       {showExpiryWarning && (
@@ -656,9 +726,15 @@ export default function NotebookEditor({
               >
                 <Copy size={14} />
               </button>
-              <button onClick={() => window.print()} className="btn-ghost !px-1.5 hidden sm:flex" title="Print">
+              <a
+                href={`/n/${notebook.slug}/print`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-ghost !px-1.5 hidden sm:flex"
+                title="Print or save as PDF"
+              >
                 <Printer size={14} />
-              </button>
+              </a>
             </div>
           </div>
 
@@ -691,14 +767,13 @@ export default function NotebookEditor({
             )}
 
             {(!isEdit || viewMode === "split" || viewMode === "read") && (
-              <div className={`flex-1 overflow-y-auto ${paperClass}`}>
+              <div className={`flex-1 overflow-y-auto ${paperClass} ${typeClass}`}>
                 <div className="margin-rule min-h-full">
                   <div className="max-w-2xl mx-auto px-5 sm:pl-16 sm:pr-8 py-8">
-                    {!isEdit && (
+                    {!isOwner && (
                       <p className="text-[0.8rem] mb-6" style={{ color: "var(--ink-3)" }}>
                         {notebook.view_count} {notebook.view_count === 1 ? "view" : "views"}
-                        {activePage?.updated_at &&
-                          ` · updated ${new Date(activePage.updated_at).toLocaleDateString()}`}
+                        {activePage?.updated_at && ` · updated ${formatDate(activePage.updated_at)}`}
                         {notebook.expires_at && ` · ${expiryLabel(notebook.expires_at)}`}
                       </p>
                     )}

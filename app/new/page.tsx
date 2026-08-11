@@ -16,15 +16,16 @@ import { saveNotebook } from "@/lib/local-storage";
 import { slugify } from "@/lib/slug";
 import { NOTEBOOK_ICONS } from "@/lib/templates";
 import { DEFAULT_EXPIRY_DAYS, EXPIRY_OPTIONS } from "@/lib/expiry";
-import type { PaperTexture } from "@/lib/types";
+import { FONT_OPTIONS } from "@/lib/fonts";
+import type { NotebookFont, PaperTexture } from "@/lib/types";
 
 type SlugState = "idle" | "checking" | "free" | "taken" | "invalid";
 
 const TEXTURES: { id: PaperTexture; label: string; className: string }[] = [
+  { id: "plain", label: "Plain", className: "paper-plain" },
   { id: "ruled", label: "Ruled", className: "paper-ruled" },
   { id: "grid", label: "Grid", className: "paper-grid" },
   { id: "dot", label: "Dotted", className: "paper-dot" },
-  { id: "plain", label: "Plain", className: "paper-plain" },
 ];
 
 export default function NewNotebookPage() {
@@ -36,7 +37,9 @@ export default function NewNotebookPage() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [slugState, setSlugState] = useState<SlugState>("idle");
   const [expiryDays, setExpiryDays] = useState<number | null>(DEFAULT_EXPIRY_DAYS);
-  const [texture, setTexture] = useState<PaperTexture>("ruled");
+  const [texture, setTexture] = useState<PaperTexture>("plain");
+  const [font, setFont] = useState<NotebookFont>("hand");
+  const [openEdit, setOpenEdit] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -85,6 +88,8 @@ export default function NewNotebookPage() {
           slug: effectiveSlug || undefined,
           emoji: icon,
           theme: texture,
+          font,
+          allowPublicEdit: openEdit,
           password: password.trim() || undefined,
           expiresInDays: expiryDays,
         }),
@@ -217,8 +222,13 @@ export default function NewNotebookPage() {
               <h1 className="text-[1.8rem] leading-tight" style={{ fontFamily: "var(--font-sketch), serif" }}>
                 Start a notebook
               </h1>
-              <p className="text-[0.93rem] mb-7" style={{ color: "var(--ink-2)" }}>
+              <p className="text-[0.93rem] mb-2" style={{ color: "var(--ink-2)" }}>
                 One field is required. Everything else has a sensible answer already.
+              </p>
+              <p className="text-[0.86rem] mb-7">
+                <Link href="/quick" className="underline" style={{ color: "var(--red)" }}>
+                  In a hurry? Paste and share instead.
+                </Link>
               </p>
 
               {/* Title + icon */}
@@ -343,6 +353,44 @@ export default function NewNotebookPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Typeface */}
+              <label className="label">Typeface</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {FONT_OPTIONS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    className={`chip ${f.className}`}
+                    data-on={font === f.id}
+                    onClick={() => setFont(f.id)}
+                    style={{ fontFamily: "var(--nb-body)" }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[0.82rem] mb-7" style={{ color: "var(--ink-3)" }}>
+                {FONT_OPTIONS.find((f) => f.id === font)?.hint}
+                {font === "hand" && " — printed copies always use a professional serif."}
+              </p>
+
+              {/* Open editing */}
+              <label className="flex items-start gap-2.5 cursor-pointer mb-7">
+                <input
+                  type="checkbox"
+                  checked={openEdit}
+                  onChange={(e) => setOpenEdit(e.target.checked)}
+                  className="mt-1"
+                  style={{ accentColor: "var(--red)" }}
+                />
+                <span>
+                  <span className="text-[0.92rem] block">Let anyone with the link edit it</span>
+                  <span className="text-[0.8rem]" style={{ color: "var(--ink-3)" }}>
+                    They can write and add pages. Only you can change these settings.
+                  </span>
+                </span>
+              </label>
 
               {/* Password */}
               {showPassword ? (

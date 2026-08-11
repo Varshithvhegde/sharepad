@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Loader2, Trash2, X } from "lucide-react";
 import { removeSavedNotebook } from "@/lib/local-storage";
 import { EXPIRY_OPTIONS, daysUntil, expiryLabel } from "@/lib/expiry";
-import type { Notebook, NotebookVisibility, PaperTexture } from "@/lib/types";
+import { FONT_OPTIONS } from "@/lib/fonts";
+import type { Notebook, NotebookFont, NotebookVisibility, PaperTexture } from "@/lib/types";
 
 interface SettingsPanelProps {
   notebook: Notebook;
@@ -39,8 +40,10 @@ export default function SettingsPanel({
 
   const [description, setDescription] = useState(notebook.description ?? "");
   const [texture, setTexture] = useState<PaperTexture>(notebook.theme);
+  const [font, setFont] = useState<NotebookFont>(notebook.font);
   const [visibility, setVisibility] = useState<NotebookVisibility>(notebook.visibility);
   const [readOnly, setReadOnly] = useState(notebook.read_only);
+  const [publicEdit, setPublicEdit] = useState(notebook.allow_public_edit);
   const [allowComments, setAllowComments] = useState(notebook.allow_comments);
   const [burnAfterRead, setBurnAfterRead] = useState(notebook.burn_after_read);
   const [password, setPassword] = useState("");
@@ -54,8 +57,10 @@ export default function SettingsPanel({
       const body: Record<string, unknown> = {
         description,
         theme: texture,
+        font,
         visibility,
         read_only: readOnly,
+        allow_public_edit: publicEdit,
         allow_comments: allowComments,
         burn_after_read: burnAfterRead,
       };
@@ -74,8 +79,7 @@ export default function SettingsPanel({
         return;
       }
       onUpdate(data.notebook);
-      if (data.notebook.theme !== notebook.theme) window.location.reload();
-      else onClose();
+      onClose();
     } finally {
       setSaving(false);
     }
@@ -158,6 +162,32 @@ export default function SettingsPanel({
               </div>
 
               <div>
+                <label className="label">Typeface</label>
+                <div className="space-y-1.5">
+                  {FONT_OPTIONS.map((f) => (
+                    <label key={f.id} className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="font"
+                        checked={font === f.id}
+                        onChange={() => setFont(f.id)}
+                        className="mt-1"
+                        style={{ accentColor: "var(--red)" }}
+                      />
+                      <span>
+                        <span className={`text-[0.95rem] block ${f.className}`} style={{ fontFamily: "var(--nb-body)" }}>
+                          {f.label}
+                        </span>
+                        <span className="text-[0.8rem]" style={{ color: "var(--ink-3)" }}>
+                          {f.hint}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <label className="label">Expiry — currently {expiryLabel(notebook.expires_at).toLowerCase()}</label>
                 <div className="flex flex-wrap gap-2">
                   {EXPIRY_OPTIONS.map((opt) => (
@@ -233,8 +263,14 @@ export default function SettingsPanel({
               <div className="space-y-2.5">
                 {[
                   {
+                    label: "Anyone with the link can edit",
+                    hint: "Turns the notebook into a shared scratchpad. Settings stay yours.",
+                    value: publicEdit,
+                    set: setPublicEdit,
+                  },
+                  {
                     label: "Read-only",
-                    hint: "Freeze the notebook so even the edit link can't change it",
+                    hint: "Freeze the notebook so nobody can change it, including you",
                     value: readOnly,
                     set: setReadOnly,
                   },
