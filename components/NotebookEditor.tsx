@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowDownUp,
   Check,
   ChevronDown,
   ChevronUp,
@@ -90,9 +91,15 @@ export default function NotebookEditor({
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [dismissedExpiry, setDismissedExpiry] = useState(false);
 
+  const [syncScroll, setSyncScroll] = useState(true);
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Which pane started the current scroll, so the echo back doesn't fight it.
+  const scrollLead = useRef<"editor" | "preview" | null>(null);
+  const scrollRelease = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { toasts, show: toast, dismiss } = useToast();
 
   const isOwner = mode === "edit";
@@ -134,7 +141,41 @@ export default function NotebookEditor({
     setContent(page.content);
     setTitle(page.title);
     setSidebarOpen(false);
+    // Start a new page at the top rather than wherever the last one was left.
+    scrollLead.current = null;
+    if (textareaRef.current) textareaRef.current.scrollTop = 0;
+    if (previewRef.current) previewRef.current.scrollTop = 0;
   }, []);
+
+  // Remember the preference; it is a matter of taste rather than a setting.
+  useEffect(() => {
+    if (localStorage.getItem("sharepad_sync_scroll") === "off") setSyncScroll(false);
+  }, []);
+
+  const mirrorScroll = useCallback(
+    (from: "editor" | "preview") => {
+      if (!syncScroll || viewMode !== "split") return;
+      // Ignore the scroll event our own mirroring just caused.
+      if (scrollLead.current && scrollLead.current !== from) return;
+
+      const source = from === "editor" ? textareaRef.current : previewRef.current;
+      const target = from === "editor" ? previewRef.current : textareaRef.current;
+      if (!source || !target) return;
+
+      const sourceRange = source.scrollHeight - source.clientHeight;
+      const targetRange = target.scrollHeight - target.clientHeight;
+      if (sourceRange <= 0 || targetRange <= 0) return;
+
+      scrollLead.current = from;
+      target.scrollTop = (source.scrollTop / sourceRange) * targetRange;
+
+      if (scrollRelease.current) clearTimeout(scrollRelease.current);
+      scrollRelease.current = setTimeout(() => {
+        scrollLead.current = null;
+      }, 120);
+    },
+    [syncScroll, viewMode]
+  );
 
   const savePage = useCallback(
     async (pageId: string, updates: Partial<Pick<Page, "content" | "title" | "icon">>) => {
@@ -707,6 +748,26 @@ export default function NotebookEditor({
             </span>
 
             <div className="flex items-center gap-0.5 shrink-0">
+              {isEdit && viewMode === "split" && (
+                <button
+                  onClick={() => {
+                    const next = !syncScroll;
+                    setSyncScroll(next);
+                    localStorage.setItem("sharepad_sync_scroll", next ? "on" : "off");
+                  }}
+                  aria-pressed={syncScroll}
+                  className="btn-ghost !px-1.5 hidden sm:flex"
+                  title={syncScroll ? "Scrolling is linked" : "Scrolling is independent"}
+                  style={
+                    syncScroll
+                      ? { background: "var(--sticky-y)", borderColor: "rgba(28,28,28,0.25)" }
+                      : undefined
+                  }
+                >
+                  <ArrowDownUp size={14} />
+                </button>
+              )}
+
               {isEdit && activePage && (
                 <>
                   <button onClick={() => fileInputRef.current?.click()} className="btn-ghost !px-1.5" title="Import a .md file">
@@ -761,6 +822,7 @@ export default function NotebookEditor({
                   placeholder="Start writing…"
                   aria-label="Markdown source"
                   spellCheck
+                  onScroll={() => mirrorScroll("editor")}
                   className={`flex-1 w-full p-5 resize-none outline-none text-[0.92rem] leading-[1.8] ${paperClass}`}
                   style={{ fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace" }}
                 />
@@ -768,7 +830,11 @@ export default function NotebookEditor({
             )}
 
             {(!isEdit || viewMode === "split" || viewMode === "read") && (
-              <div className={`flex-1 overflow-y-auto ${paperClass} ${typeClass}`}>
+              <div
+                ref={previewRef}
+                onScroll={() => mirrorScroll("preview")}
+                className={`flex-1 overflow-y-auto ${paperClass} ${typeClass}`}
+              >
                 {/* The rule belongs to the text column, so it stays beside the words. */}
                 <div className="margin-rule min-h-full mx-auto w-full max-w-3xl">
                   <div className="pl-12 pr-5 sm:pl-16 sm:pr-10 py-8">
