@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import {
   ArrowDownUp,
@@ -42,6 +49,7 @@ import { PAGE_TEMPLATES, PAGE_ICONS } from "@/lib/templates";
 import { expiryLabel, expiringSoon } from "@/lib/expiry";
 import { fontClass } from "@/lib/fonts";
 import { formatDate } from "@/lib/format";
+import { buildAnchors, mapScroll, type Anchor } from "@/lib/scroll-sync";
 import type { Notebook, Page } from "@/lib/types";
 
 type ViewMode = "write" | "split" | "read";
@@ -100,7 +108,15 @@ export default function NotebookEditor({
   // Which pane started the current scroll, so the echo back doesn't fight it.
   const scrollLead = useRef<"editor" | "preview" | null>(null);
   const scrollRelease = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const anchorCache = useRef<{ key: string; anchors: Anchor[] } | null>(null);
   const { toasts, show: toast, dismiss } = useToast();
+
+  /*
+   * Re-parsing a long document on every keystroke blocks the keypress itself,
+   * which reads as the preview freezing. Deferring lets typing stay ahead and
+   * the preview catch up a beat later.
+   */
+  const previewContent = useDeferredValue(content);
 
   const isOwner = mode === "edit";
   // Visitors can edit too when the owner has opened the notebook up.
@@ -158,23 +174,38 @@ export default function NotebookEditor({
       // Ignore the scroll event our own mirroring just caused.
       if (scrollLead.current && scrollLead.current !== from) return;
 
-      const source = from === "editor" ? textareaRef.current : previewRef.current;
-      const target = from === "editor" ? previewRef.current : textareaRef.current;
-      if (!source || !target) return;
+      const editor = textareaRef.current;
+      const preview = previewRef.current;
+      if (!editor || !preview) return;
+
+      const source = from === "editor" ? editor : preview;
+      const target = from === "editor" ? preview : editor;
 
       const sourceRange = source.scrollHeight - source.clientHeight;
       const targetRange = target.scrollHeight - target.clientHeight;
       if (sourceRange <= 0 || targetRange <= 0) return;
 
+      // Measuring every heading is costly, so hold onto it until something moves.
+      const key = `${content.length}:${editor.clientWidth}:${preview.clientWidth}:${preview.scrollHeight}`;
+      if (anchorCache.current?.key !== key) {
+        anchorCache.current = { key, anchors: buildAnchors(editor, preview, content) };
+      }
+
       scrollLead.current = from;
-      target.scrollTop = (source.scrollTop / sourceRange) * targetRange;
+      target.scrollTop = mapScroll(
+        source.scrollTop,
+        anchorCache.current.anchors,
+        sourceRange,
+        targetRange,
+        from === "editor" ? "toPreview" : "toSource"
+      );
 
       if (scrollRelease.current) clearTimeout(scrollRelease.current);
       scrollRelease.current = setTimeout(() => {
         scrollLead.current = null;
       }, 120);
     },
-    [syncScroll, viewMode]
+    [syncScroll, viewMode, content]
   );
 
   const savePage = useCallback(
@@ -847,10 +878,10 @@ export default function NotebookEditor({
                       </p>
                     )}
 
-                    <MarkdownPreview content={isEdit ? content : activePage?.content ?? ""} />
+                    <MarkdownPreview content={isEdit ? previewContent : activePage?.content ?? ""} />
 
                     <div className="mt-12 pt-6 space-y-10" style={{ borderTop: "1.5px dashed var(--rule)" }}>
-                      <TableOfContents content={isEdit ? content : activePage?.content ?? ""} />
+                      <TableOfContents content={isEdit ? previewContent : activePage?.content ?? ""} />
                       {notebook.allow_comments && activePageId && (
                         <CommentsPanel pageId={activePageId} />
                       )}

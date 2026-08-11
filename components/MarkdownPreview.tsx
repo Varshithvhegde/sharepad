@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -26,7 +27,22 @@ function heading(Tag: "h1" | "h2" | "h3" | "h4") {
   };
 }
 
-export default function MarkdownPreview({
+const COMPONENTS = {
+  h1: heading("h1"),
+  h2: heading("h2"),
+  h3: heading("h3"),
+  h4: heading("h4"),
+  a: ({ children, ...props }: ComponentPropsWithoutRef<"a">) => (
+    <a {...props} target="_blank" rel="noopener noreferrer nofollow">
+      {children}
+    </a>
+  ),
+};
+
+const REMARK = [remarkGfm];
+const REHYPE = [rehypeHighlight];
+
+function MarkdownPreview({
   content,
   className = "",
 }: {
@@ -43,23 +59,12 @@ export default function MarkdownPreview({
 
   return (
     <div className={`markdown-body ${className}`}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
-        components={{
-          h1: heading("h1"),
-          h2: heading("h2"),
-          h3: heading("h3"),
-          h4: heading("h4"),
-          a: ({ children, ...props }) => (
-            <a {...props} target="_blank" rel="noopener noreferrer nofollow">
-              {children}
-            </a>
-          ),
-        }}
-      >
+      <ReactMarkdown remarkPlugins={REMARK} rehypePlugins={REHYPE} components={COMPONENTS}>
         {content}
       </ReactMarkdown>
     </div>
   );
 }
+
+// Parsing is the expensive part of typing, so skip it when nothing changed.
+export default memo(MarkdownPreview);
