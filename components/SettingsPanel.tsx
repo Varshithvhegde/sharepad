@@ -1,208 +1,299 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trash2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Loader2, Trash2, X } from "lucide-react";
 import { removeSavedNotebook } from "@/lib/local-storage";
-import type { Notebook, NotebookTheme, NotebookVisibility } from "@/lib/types";
+import { EXPIRY_OPTIONS, daysUntil, expiryLabel } from "@/lib/expiry";
+import type { Notebook, NotebookVisibility, PaperTexture } from "@/lib/types";
 
 interface SettingsPanelProps {
   notebook: Notebook;
   editToken: string;
   onClose: () => void;
   onUpdate: (n: Notebook) => void;
-  theme?: "dark" | "paper";
 }
+
+const TEXTURES: { id: PaperTexture; label: string }[] = [
+  { id: "ruled", label: "Ruled" },
+  { id: "grid", label: "Grid" },
+  { id: "dot", label: "Dotted" },
+  { id: "plain", label: "Plain" },
+];
+
+const VISIBILITIES: { id: NotebookVisibility; label: string; hint: string }[] = [
+  { id: "unlisted", label: "Anyone with the link", hint: "Not listed anywhere public" },
+  { id: "public", label: "Public", hint: "Fine to be indexed and found" },
+  { id: "private", label: "Only me", hint: "The view link stops working" },
+];
 
 export default function SettingsPanel({
   notebook,
   editToken,
   onClose,
   onUpdate,
-  theme = "dark",
 }: SettingsPanelProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
   const [description, setDescription] = useState(notebook.description ?? "");
-  const [emoji, setEmoji] = useState(notebook.emoji);
-  const [notebookTheme, setNotebookTheme] = useState<NotebookTheme>(notebook.theme);
+  const [texture, setTexture] = useState<PaperTexture>(notebook.theme);
   const [visibility, setVisibility] = useState<NotebookVisibility>(notebook.visibility);
   const [readOnly, setReadOnly] = useState(notebook.read_only);
   const [allowComments, setAllowComments] = useState(notebook.allow_comments);
   const [burnAfterRead, setBurnAfterRead] = useState(notebook.burn_after_read);
   const [password, setPassword] = useState("");
-  const [expiresInDays, setExpiresInDays] = useState<number | "">("");
-  const isPaper = theme === "paper";
+  const [clearPassword, setClearPassword] = useState(false);
+  const [expiryDays, setExpiryDays] = useState<number | null | undefined>(undefined);
 
   async function save() {
-    setLoading(true);
+    setSaving(true);
+    setError("");
     try {
       const body: Record<string, unknown> = {
         description,
-        emoji,
-        theme: notebookTheme,
+        theme: texture,
         visibility,
         read_only: readOnly,
         allow_comments: allowComments,
         burn_after_read: burnAfterRead,
       };
-      if (password.trim()) body.password = password.trim();
-      if (expiresInDays !== "") body.expiresInDays = Number(expiresInDays);
+      if (clearPassword) body.password = null;
+      else if (password.trim()) body.password = password.trim();
+      if (expiryDays !== undefined) body.expiresInDays = expiryDays;
 
       const res = await fetch(`/api/notebooks/${notebook.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Edit-Token": editToken,
-        },
+        headers: { "Content-Type": "application/json", "X-Edit-Token": editToken },
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (res.ok) {
-        onUpdate(data.notebook);
-        onClose();
-        if (data.notebook.theme !== notebook.theme) {
-          window.location.reload();
-        }
+      if (!res.ok) {
+        setError(data.error ?? "Those settings didn't save");
+        return;
       }
+      onUpdate(data.notebook);
+      if (data.notebook.theme !== notebook.theme) window.location.reload();
+      else onClose();
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
   async function deleteNotebook() {
-    if (!confirm("Delete this notebook permanently? This cannot be undone.")) return;
-    setLoading(true);
+    if (!confirm(`Delete "${notebook.title}" and every page in it? This cannot be undone.`)) return;
+    setSaving(true);
     const res = await fetch(`/api/notebooks/${notebook.id}`, {
       method: "DELETE",
       headers: { "X-Edit-Token": editToken },
     });
     if (res.ok) {
-      removeSavedNotebook(notebook.slug);
+      removeSavedNotebook(notebook.slug, editToken);
       router.push("/");
+    } else {
+      setSaving(false);
+      setError("Could not delete the notebook");
     }
-    setLoading(false);
   }
 
-  const inputClass = `w-full h-9 px-3 text-sm rounded-lg outline-none ${
-    isPaper
-      ? "bg-[var(--paper-2)] border border-[var(--border-paper)]"
-      : "bg-[var(--shell-3)] border border-[var(--border)]"
-  }`;
-
-  const labelClass = "text-xs font-medium opacity-70 mb-1 block";
+  const currentExpiry = daysUntil(notebook.expires_at);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div
-        className={`w-full max-w-md rounded-2xl overflow-hidden animate-fade-up ${
-          isPaper
-            ? "bg-white border border-[var(--border-paper)]"
-            : "bg-[var(--shell-2)] border border-[var(--border)]"
-        }`}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-inherit">
-          <h2 className="font-semibold">Notebook settings</h2>
-          <button onClick={onClose} className="p-1 opacity-60 hover:opacity-100">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-          <div>
-            <label className={labelClass}>Emoji</label>
-            <input value={emoji} onChange={(e) => setEmoji(e.target.value)} className={inputClass} maxLength={4} />
-          </div>
-          <div>
-            <label className={labelClass}>Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className={`${inputClass} h-auto py-2 resize-none`}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Theme</label>
-            <select
-              value={notebookTheme}
-              onChange={(e) => setNotebookTheme(e.target.value as NotebookTheme)}
-              className={inputClass}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-5 overflow-y-auto"
+      style={{ background: "rgba(28,28,28,0.4)" }}
+      onClick={onClose}
+    >
+      <div className="w-full max-w-md relative note-enter my-auto" onClick={(e) => e.stopPropagation()}>
+        <span
+          className="tape tape-g"
+          style={{ top: -9, left: "50%", transform: "translateX(-50%) rotate(2deg)", width: 62, height: 17 }}
+        />
+        <div className="sk">
+          <div className="sk-b" />
+          <div className="sk-i">
+            <div
+              className="flex items-center justify-between px-6 py-4 pt-7"
+              style={{ borderBottom: "1.5px solid rgba(28,28,28,0.14)" }}
             >
-              <option value="dark">Dark (BillForge)</option>
-              <option value="paper">Paper (PostItUp)</option>
-              <option value="auto">Auto</option>
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Visibility</label>
-            <select
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value as NotebookVisibility)}
-              className={inputClass}
-            >
-              <option value="unlisted">Unlisted (link only)</option>
-              <option value="public">Public</option>
-              <option value="private">Private (edit link only)</option>
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Password (optional)</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={notebook.has_password ? "Set new password" : "Add password"}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Expires in (days)</label>
-            <input
-              type="number"
-              min={1}
-              value={expiresInDays}
-              onChange={(e) => setExpiresInDays(e.target.value ? Number(e.target.value) : "")}
-              placeholder="Never"
-              className={inputClass}
-            />
-          </div>
+              <h2 className="text-[1.5rem]" style={{ fontFamily: "var(--font-sketch), serif" }}>
+                Settings
+              </h2>
+              <button onClick={onClose} className="btn-ghost !px-1.5" aria-label="Close">
+                <X size={17} />
+              </button>
+            </div>
 
-          <div className="space-y-3 pt-2">
-            {[
-              { label: "Read-only mode", value: readOnly, set: setReadOnly },
-              { label: "Allow comments", value: allowComments, set: setAllowComments },
-              { label: "Burn after first read", value: burnAfterRead, set: setBurnAfterRead },
-            ].map((toggle) => (
-              <label key={toggle.label} className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm">{toggle.label}</span>
-                <input
-                  type="checkbox"
-                  checked={toggle.value}
-                  onChange={(e) => toggle.set(e.target.checked)}
-                  className="accent-[var(--accent)]"
+            <div className="px-6 py-5 space-y-6 max-h-[62vh] overflow-y-auto">
+              <div>
+                <label className="label" htmlFor="desc">
+                  Description
+                </label>
+                <textarea
+                  id="desc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Shows up when the link is previewed"
+                  className="field resize-none text-[0.92rem]"
                 />
-              </label>
-            ))}
-          </div>
-        </div>
+              </div>
 
-        <div className="p-5 border-t border-inherit flex gap-3">
-          <button
-            onClick={save}
-            disabled={loading}
-            className="flex-1 h-10 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2"
-            style={{ background: "var(--accent)" }}
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : "Save settings"}
-          </button>
-          <button
-            onClick={deleteNotebook}
-            disabled={loading}
-            className="h-10 px-4 rounded-lg text-sm text-red-400 border border-red-400/30 flex items-center gap-2 hover:bg-red-400/10"
-          >
-            <Trash2 size={14} />
-          </button>
+              <div>
+                <label className="label">Paper</label>
+                <div className="flex flex-wrap gap-2">
+                  {TEXTURES.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className="chip"
+                      data-on={texture === t.id}
+                      onClick={() => setTexture(t.id)}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Expiry — currently {expiryLabel(notebook.expires_at).toLowerCase()}</label>
+                <div className="flex flex-wrap gap-2">
+                  {EXPIRY_OPTIONS.map((opt) => (
+                    <button
+                      key={String(opt.days)}
+                      type="button"
+                      className="chip"
+                      data-on={
+                        expiryDays === undefined
+                          ? opt.days === null
+                            ? currentExpiry === null
+                            : currentExpiry === opt.days
+                          : expiryDays === opt.days
+                      }
+                      onClick={() => setExpiryDays(opt.days)}
+                    >
+                      {opt.days === null ? "Never" : `${opt.label} from now`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Who can open the view link</label>
+                <div className="space-y-1.5">
+                  {VISIBILITIES.map((v) => (
+                    <label key={v.id} className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        checked={visibility === v.id}
+                        onChange={() => setVisibility(v.id)}
+                        className="mt-1"
+                        style={{ accentColor: "var(--red)" }}
+                      />
+                      <span>
+                        <span className="text-[0.92rem] block">{v.label}</span>
+                        <span className="text-[0.8rem]" style={{ color: "var(--ink-3)" }}>
+                          {v.hint}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="pw">
+                  {notebook.has_password ? "Change the password" : "Add a password"}
+                </label>
+                <input
+                  id="pw"
+                  type="password"
+                  value={password}
+                  disabled={clearPassword}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={notebook.has_password ? "Leave blank to keep the current one" : "Readers will be asked for this"}
+                  className="field text-[0.92rem]"
+                />
+                {notebook.has_password && (
+                  <label className="flex items-center gap-2 mt-2 cursor-pointer text-[0.85rem]">
+                    <input
+                      type="checkbox"
+                      checked={clearPassword}
+                      onChange={(e) => setClearPassword(e.target.checked)}
+                      style={{ accentColor: "var(--red)" }}
+                    />
+                    Remove the password
+                  </label>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                {[
+                  {
+                    label: "Read-only",
+                    hint: "Freeze the notebook so even the edit link can't change it",
+                    value: readOnly,
+                    set: setReadOnly,
+                  },
+                  {
+                    label: "Let readers comment",
+                    hint: "Anyone viewing can leave notes on a page",
+                    value: allowComments,
+                    set: setAllowComments,
+                  },
+                  {
+                    label: "Delete after the first read",
+                    hint: "The view link works exactly once",
+                    value: burnAfterRead,
+                    set: setBurnAfterRead,
+                  },
+                ].map((t) => (
+                  <label key={t.label} className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={t.value}
+                      onChange={(e) => t.set(e.target.checked)}
+                      className="mt-1"
+                      style={{ accentColor: "var(--red)" }}
+                    />
+                    <span>
+                      <span className="text-[0.92rem] block">{t.label}</span>
+                      <span className="text-[0.8rem]" style={{ color: "var(--ink-3)" }}>
+                        {t.hint}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {error && (
+                <p className="text-[0.9rem]" style={{ color: "var(--red)" }}>
+                  {error}
+                </p>
+              )}
+            </div>
+
+            <div
+              className="flex gap-3 px-6 py-4"
+              style={{ borderTop: "1.5px solid rgba(28,28,28,0.14)" }}
+            >
+              <button onClick={save} disabled={saving} className="btn btn-ink flex-1">
+                {saving ? <Loader2 size={15} className="animate-spin" /> : "Save settings"}
+              </button>
+              <button
+                onClick={deleteNotebook}
+                disabled={saving}
+                className="btn !px-3"
+                style={{ color: "var(--red)" }}
+                title="Delete this notebook"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

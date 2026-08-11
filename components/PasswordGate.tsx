@@ -1,20 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
-interface PasswordGateProps {
-  slug: string;
-  title: string;
-  theme?: "dark" | "paper";
-}
-
-export default function PasswordGate({ slug, title, theme = "dark" }: PasswordGateProps) {
+export default function PasswordGate({ slug, title }: { slug: string; title: string }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const isPaper = theme === "paper";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,71 +18,59 @@ export default function PasswordGate({ slug, title, theme = "dark" }: PasswordGa
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Wrong password");
+        const data = await res.json();
+        setError(data.error === "Wrong password" ? "That password doesn't match." : "Could not unlock this notebook.");
         return;
       }
       window.location.reload();
     } catch {
-      setError("Something went wrong");
+      setError("Could not reach the server. Try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div
-      className={`min-h-screen flex items-center justify-center px-6 ${
-        isPaper ? "bg-dot-grid-paper theme-paper" : "bg-[var(--shell)] bg-dot-grid"
-      }`}
-    >
-      <div
-        className={`w-full max-w-md p-8 rounded-2xl animate-fade-up ${
-          isPaper
-            ? "bg-white border border-[var(--border-paper)] shadow-lg sketch-card"
-            : "bg-[var(--shell-2)] border border-[var(--border)]"
-        }`}
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ background: isPaper ? "var(--sticky-y)" : "rgba(249,115,22,0.15)" }}
-          >
-            <Lock size={18} className={isPaper ? "text-[var(--paper-ink)]" : "text-[var(--accent)]"} />
-          </div>
-          <div>
-            <p className={`text-xs uppercase tracking-widest ${isPaper ? "text-[var(--paper-ink-2)]" : "text-[var(--ink-2)]"}`}>
-              Password protected
+    <div className="min-h-screen paper-dot flex items-center justify-center px-5">
+      <div className="w-full max-w-sm relative note-enter">
+        <span
+          className="tape tape-p"
+          style={{ top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 60, height: 17 }}
+        />
+        <form onSubmit={handleSubmit} className="sk">
+          <div className="sk-b" />
+          <div className="sk-i p-7 pt-9">
+            <p className="text-[0.8rem] uppercase tracking-[0.14em] mb-1" style={{ color: "var(--ink-3)" }}>
+              Locked notebook
             </p>
-            <h1 className={`font-semibold ${isPaper ? "text-[var(--paper-ink)]" : "text-[var(--ink)]"}`}>
+            <h1 className="text-[1.6rem] leading-tight mb-1" style={{ fontFamily: "var(--font-sketch), serif" }}>
               {title}
             </h1>
-          </div>
-        </div>
+            <p className="text-[0.9rem] mb-5" style={{ color: "var(--ink-2)" }}>
+              Enter the password you were given to read this.
+            </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password"
-            autoFocus
-            className={`w-full h-11 px-4 rounded-lg text-sm outline-none transition-all focus:ring-2 focus:ring-[var(--accent)] ${
-              isPaper
-                ? "bg-[var(--paper-2)] text-[var(--paper-ink)] border border-[var(--border-paper)]"
-                : "bg-[var(--shell-3)] text-[var(--ink)] border border-[var(--border)]"
-            }`}
-          />
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading || !password}
-            className="w-full h-11 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:brightness-110 disabled:opacity-50"
-            style={{ background: "var(--accent)" }}
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : "Unlock notebook"}
-          </button>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              aria-label="Password"
+              autoFocus
+              className="field mb-3"
+            />
+
+            {error && (
+              <p className="text-[0.88rem] mb-3" style={{ color: "var(--red)" }}>
+                {error}
+              </p>
+            )}
+
+            <button type="submit" disabled={loading || !password} className="btn btn-ink w-full">
+              {loading ? <Loader2 size={15} className="animate-spin" /> : "Open it"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -2,31 +2,55 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  FileText,
-  Link2,
-  Lock,
-  Layers,
-  Code2,
-  Zap,
-  Share2,
-  Clock,
-  MessageSquare,
-} from "lucide-react";
-import { getSavedNotebooks } from "@/lib/local-storage";
+import { ArrowRight, KeyRound, Trash2 } from "lucide-react";
+import { getSavedNotebooks, removeSavedNotebook } from "@/lib/local-storage";
 import type { SavedNotebook } from "@/lib/types";
 
-const features = [
-  { icon: Layers, title: "Multi-page notebooks", desc: "One link, unlimited markdown pages" },
-  { icon: Link2, title: "Custom URLs", desc: "Pick your slug: /n/my-project-notes" },
-  { icon: Lock, title: "Password lock", desc: "Optional password to protect views" },
-  { icon: FileText, title: "Live markdown", desc: "Split editor with GFM preview" },
-  { icon: Share2, title: "Separate edit link", desc: "Share read-only, keep edit secret" },
-  { icon: Code2, title: "Embed anywhere", desc: "iframe + script tag like PostItUp" },
-  { icon: Clock, title: "Auto-expire", desc: "Self-destruct after N days" },
-  { icon: MessageSquare, title: "Comments", desc: "Anonymous feedback on pages" },
-  { icon: Zap, title: "Zero signup", desc: "Create instantly, token-based ownership" },
+const TAB_COLORS = ["sn-y", "sn-b", "sn-p", "sn-g"];
+
+const capabilities = [
+  {
+    tape: "y",
+    rot: "-1.2deg",
+    color: "sn-y",
+    title: "As many pages as you need",
+    body: "A notebook is not one note. Add pages, name them, reorder them — they all live behind the same link.",
+  },
+  {
+    tape: "b",
+    rot: "1deg",
+    color: "sn-b",
+    title: "Pick your own link",
+    body: "Claim sharepad.app/n/kitchen-reno while you type. Taken names tell you right away.",
+  },
+  {
+    tape: "p",
+    rot: "-0.8deg",
+    color: "sn-p",
+    title: "Notes that clean up after themselves",
+    body: "Everything expires in 10 days unless you say otherwise. Stretch it to a year, or keep it forever.",
+  },
+  {
+    tape: "g",
+    rot: "1.4deg",
+    color: "sn-g",
+    title: "Two links, two levels of trust",
+    body: "Hand out the view link freely. The edit link stays with you and is the only way back in.",
+  },
+  {
+    tape: "o",
+    rot: "-1.5deg",
+    color: "sn-o",
+    title: "Lock it if it's private",
+    body: "Add a password, flip it read-only, or let it burn after a single read.",
+  },
+  {
+    tape: "y",
+    rot: "0.9deg",
+    color: "sn-y",
+    title: "Undo yesterday",
+    body: "Every page keeps its last ten drafts. Open the history and put any of them back.",
+  },
 ];
 
 export default function HomePage() {
@@ -37,179 +61,384 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--shell)] text-[var(--ink)] bg-dot-grid">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-nav flex items-center justify-between px-6 md:px-10 h-14">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md flex items-center justify-center text-sm" style={{ background: "var(--accent)" }}>
-            📝
+    <div className="min-h-screen paper-dot">
+      {/* ── Nav ── */}
+      <nav
+        className="sticky top-0 z-50"
+        style={{
+          borderBottom: "1.5px solid rgba(28,28,28,0.14)",
+          background: "rgba(250,249,246,0.93)",
+          backdropFilter: "blur(6px)",
+        }}
+      >
+        <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
+          <span className="flex items-center gap-2.5">
+            <NotebookMark />
+            <span
+              className="text-[1.35rem] leading-none"
+              style={{ fontFamily: "var(--font-sketch), serif" }}
+            >
+              SharePad
+            </span>
+          </span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link href="/recover" className="btn-ghost text-[0.9rem]">
+              <KeyRound size={14} />
+              <span className="hidden sm:inline">I have an edit link</span>
+              <span className="sm:hidden">Edit link</span>
+            </Link>
+            <Link href="/new" className="btn btn-y text-[0.95rem] !py-2 !px-4">
+              Start writing
+            </Link>
           </div>
-          <span className="font-semibold tracking-tight text-sm">SharePad</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/new" className="text-[13px] text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors">
-            New notebook
-          </Link>
-          <Link
-            href="/new"
-            className="flex items-center gap-1.5 h-8 px-4 text-[13px] font-medium text-white rounded-md transition-all hover:brightness-110"
-            style={{ background: "var(--accent)" }}
-          >
-            Start free <ArrowRight size={12} />
-          </Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative pt-36 pb-20 px-6 overflow-hidden">
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-20 blur-[120px] pointer-events-none glow-orange" />
-
-        <div className="relative max-w-3xl mx-auto text-center animate-fade-up">
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-medium mb-8"
-            style={{ border: "1px solid rgba(249,115,22,0.3)", background: "rgba(249,115,22,0.08)", color: "var(--accent)" }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
-            No signup · No login · Just share
-          </div>
-
-          <h1 className="mb-6 leading-[1.05] tracking-tight" style={{ fontSize: "clamp(40px, 7vw, 72px)" }}>
-            Share notes with
-            <br />
-            <em style={{ fontFamily: "var(--font-instrument), serif", fontStyle: "italic", color: "var(--accent)" }}>
-              one link.
-            </em>
-          </h1>
-
-          <p className="text-[17px] leading-relaxed max-w-xl mx-auto mb-10 text-[var(--ink-2)]">
-            Multi-page markdown notebooks you can share instantly.
-            Password lock, embed, export — all without creating an account.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/new"
-              className="flex items-center gap-2 h-11 px-7 text-[14px] font-semibold text-white rounded-lg transition-all hover:brightness-110 active:scale-[0.98]"
-              style={{ background: "var(--accent)", boxShadow: "0 0 32px var(--accent-glow)" }}
+      {/* ── Hero ── */}
+      <section className="max-w-5xl mx-auto px-5 pt-16 pb-10 sm:pt-24">
+        <div className="grid lg:grid-cols-[1.05fr_1fr] gap-14 items-center">
+          <div>
+            <span
+              className="text-[0.8rem] uppercase tracking-[0.16em]"
+              style={{ color: "var(--ink-3)" }}
             >
-              Create a notebook <ArrowRight size={14} />
-            </Link>
-          </div>
+              Notebooks you can hand to anyone
+            </span>
 
-          <p className="mt-5 text-[12px] text-[var(--ink-3)]">Save your edit link — it&apos;s your only key.</p>
-        </div>
-
-        {/* Mockup */}
-        <div className="relative max-w-3xl mx-auto mt-16 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-          <div
-            className="relative rounded-2xl overflow-hidden"
-            style={{ border: "1px solid var(--border)", background: "var(--shell-2)", boxShadow: "0 32px 80px rgba(0,0,0,0.6)" }}
-          >
-            <div className="flex items-center justify-between px-4 h-10 border-b border-[var(--border)] bg-[#0e0e11]">
-              <div className="flex items-center gap-1.5">
-                {["#ff5f57", "#ffbd2e", "#28c840"].map((c) => (
-                  <div key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
-                ))}
-              </div>
-              <span className="text-[11px] text-[var(--ink-3)]">sharepad.app/n/project-notes</span>
-              <span className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: "rgba(249,115,22,0.15)", color: "var(--accent)" }}>
-                Auto-saved
-              </span>
-            </div>
-            <div className="flex h-[280px]">
-              <div className="w-48 border-r border-[var(--border)] p-3 space-y-1">
-                {["👋 Welcome", "📋 Todo", "🚀 Launch plan"].map((p, i) => (
-                  <div
-                    key={p}
-                    className="px-2 py-1.5 rounded text-[11px]"
-                    style={{
-                      background: i === 0 ? "rgba(249,115,22,0.15)" : "rgba(255,255,255,0.04)",
-                      color: i === 0 ? "var(--accent)" : "var(--ink-2)",
-                    }}
-                  >
-                    {p}
-                  </div>
-                ))}
-              </div>
-              <div className="flex-1 flex">
-                <div className="flex-1 p-4 font-mono text-[11px] text-[var(--ink-2)] leading-relaxed border-r border-[var(--border)]">
-                  # Welcome<br />
-                  <br />
-                  Write **markdown** here.<br />
-                  - [ ] Task one<br />
-                  - [x] Task two
-                </div>
-                <div className="flex-1 p-4 text-[11px] text-[var(--ink-2)]">
-                  <h3 className="text-[var(--ink)] font-semibold mb-2">Welcome</h3>
-                  <p>Write <strong>markdown</strong> here.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features grid */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <h2
-          className="text-center text-3xl mb-3"
-          style={{ fontFamily: "var(--font-instrument), serif", fontStyle: "italic" }}
-        >
-          Everything you need
-        </h2>
-        <p className="text-center text-[var(--ink-2)] mb-12 text-sm">No accounts. No friction. Just notes.</p>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {features.map(({ icon: Icon, title, desc }, i) => (
-            <div
-              key={title}
-              className="p-5 rounded-xl transition-all hover:scale-[1.02] sketch-card"
+            <h1
+              className="mt-4 mb-1 leading-[1.06]"
               style={{
-                background: i % 3 === 0 ? "rgba(254,240,138,0.08)" : i % 3 === 1 ? "rgba(191,219,254,0.08)" : "rgba(251,207,232,0.08)",
-                border: "1px solid var(--border)",
+                fontFamily: "var(--font-sketch), serif",
+                fontSize: "clamp(2.4rem, 6.5vw, 4rem)",
               }}
             >
-              <Icon size={20} className="mb-3 text-[var(--accent)]" />
-              <h3 className="font-semibold text-sm mb-1">{title}</h3>
-              <p className="text-xs text-[var(--ink-2)] leading-relaxed">{desc}</p>
+              Write it down.
+              <br />
+              Send one link.
+            </h1>
+
+            <svg
+              width="270"
+              height="13"
+              viewBox="0 0 270 13"
+              preserveAspectRatio="none"
+              className="block mb-6 draw-line"
+              aria-hidden
+            >
+              <path
+                d="M1,8 C42,3 78,11 118,7 C158,3 196,11 236,6 C250,4.5 262,7 269,8"
+                stroke="var(--red)"
+                strokeWidth="2.5"
+                fill="none"
+                strokeLinecap="round"
+              />
+            </svg>
+
+            <p
+              className="text-[1.08rem] leading-[1.75] max-w-[30rem] mb-8"
+              style={{ color: "var(--ink-2)" }}
+            >
+              A notebook of markdown pages that lives at one address. No account, no
+              email, no setup — start typing and the link is yours.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/new" className="btn btn-ink text-[1.05rem]">
+                Start a notebook <ArrowRight size={16} />
+              </Link>
+              <Link href="/recover" className="btn text-[1.05rem]">
+                Open an existing one
+              </Link>
             </div>
-          ))}
+
+            <p className="mt-5 text-[0.85rem]" style={{ color: "var(--ink-3)" }}>
+              Free, and it stays free. Notes expire in 10 days unless you change it.
+            </p>
+          </div>
+
+          {/* Signature: a real notebook with index tabs */}
+          <NotebookPreview />
         </div>
       </section>
 
-      {/* Saved notebooks */}
+      {/* ── Saved notebooks ── */}
       {saved.length > 0 && (
-        <section className="max-w-3xl mx-auto px-6 pb-20">
-          <h2 className="text-lg font-semibold mb-4">Your notebooks</h2>
-          <div className="space-y-2">
-            {saved.map((nb) => (
-              <Link
-                key={nb.slug}
-                href={`/e/${nb.editToken}`}
-                className="flex items-center justify-between p-4 rounded-xl transition-all hover:scale-[1.01]"
-                style={{ background: "var(--shell-2)", border: "1px solid var(--border)" }}
-              >
-                <span className="font-medium text-sm">{nb.title}</span>
-                <span className="text-xs text-[var(--ink-2)]">/n/{nb.slug}</span>
-              </Link>
+        <section className="max-w-5xl mx-auto px-5 py-10">
+          <h2
+            className="text-[1.4rem] mb-1"
+            style={{ fontFamily: "var(--font-sketch), serif" }}
+          >
+            Back to your desk
+          </h2>
+          <p className="text-[0.9rem] mb-5" style={{ color: "var(--ink-2)" }}>
+            Edit links this browser remembers.
+          </p>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {saved.map((nb, i) => (
+              <div key={nb.editToken} className="relative">
+                <span
+                  className={`tape tape-${["y", "b", "p", "g"][i % 4]}`}
+                  style={{
+                    top: -8,
+                    left: "50%",
+                    transform: "translateX(-50%) rotate(-2deg)",
+                    width: 48,
+                    height: 15,
+                  }}
+                />
+                <div
+                  className={`sk ${TAB_COLORS[i % TAB_COLORS.length]}`}
+                  style={{ transform: `rotate(${i % 2 ? "0.8deg" : "-0.9deg"})` }}
+                >
+                  <div className="sk-b" />
+                  <div className="sk-i p-5 pt-6">
+                    <Link href={`/e/${nb.editToken}`} className="block">
+                      <h3
+                        className="text-[1.15rem] leading-tight mb-1"
+                        style={{ fontFamily: "var(--font-sketch), serif" }}
+                      >
+                        {nb.title}
+                      </h3>
+                      <p className="text-[0.8rem]" style={{ color: "var(--ink-2)" }}>
+                        Opens straight into editing
+                      </p>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        removeSavedNotebook(nb.slug, nb.editToken);
+                        setSaved(getSavedNotebooks());
+                      }}
+                      className="btn-ghost mt-3 !px-2 !py-1 text-[0.78rem]"
+                      title="Forget this link on this browser"
+                    >
+                      <Trash2 size={12} /> Forget
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-[var(--border)] py-8 px-6 text-center text-xs text-[var(--ink-3)]">
-        <p>
-          Built by{" "}
-          <a href="https://github.com/Varshithvhegde" className="text-[var(--accent)] hover:underline">
-            Varshithvhegde
-          </a>
-          {" · "}
-          <a href="https://github.com/Varshithvhegde/sharepad" className="hover:text-[var(--ink-2)]">
-            GitHub
-          </a>
+      {/* ── Capabilities ── */}
+      <section className="max-w-5xl mx-auto px-5 py-16">
+        <h2
+          className="text-[1.9rem] mb-2"
+          style={{ fontFamily: "var(--font-sketch), serif" }}
+        >
+          What you get
+        </h2>
+        <p className="text-[0.98rem] mb-9" style={{ color: "var(--ink-2)" }}>
+          Nothing to configure. It all works from the first page.
         </p>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
+          {capabilities.map((c) => (
+            <div key={c.title} className="relative">
+              <span
+                className={`tape tape-${c.tape}`}
+                style={{
+                  top: -8,
+                  left: 24,
+                  transform: "rotate(-3deg)",
+                  width: 54,
+                  height: 16,
+                }}
+              />
+              <article
+                className={`sk ${c.color} h-full`}
+                style={{ transform: `rotate(${c.rot})` }}
+              >
+                <div className="sk-b" />
+                <div className="sk-i p-5 pt-7">
+                  <h3
+                    className="text-[1.12rem] leading-snug mb-2"
+                    style={{ fontFamily: "var(--font-sketch), serif" }}
+                  >
+                    {c.title}
+                  </h3>
+                  <p
+                    className="text-[0.9rem] leading-[1.6]"
+                    style={{ color: "var(--ink-2)" }}
+                  >
+                    {c.body}
+                  </p>
+                </div>
+              </article>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
+      <section
+        className="max-w-3xl mx-auto px-5 py-16"
+        style={{ borderTop: "1.5px dashed var(--rule)" }}
+      >
+        <h2
+          className="text-[1.9rem] mb-8"
+          style={{ fontFamily: "var(--font-sketch), serif" }}
+        >
+          Three steps, start to shared
+        </h2>
+
+        <ol className="space-y-7">
+          {[
+            {
+              t: "Name it and claim a link",
+              d: "Type a title, take the link you want, and choose how long it should stick around.",
+            },
+            {
+              t: "Fill it with pages",
+              d: "Write markdown on the left, watch it render on the right. Add pages whenever you need one.",
+            },
+            {
+              t: "Pass the view link on",
+              d: "Readers get the whole notebook and can leave comments. You keep the edit link.",
+            },
+          ].map((s, i) => (
+            <li key={s.t} className="flex gap-5">
+              <span
+                className="shrink-0 w-9 h-9 flex items-center justify-center text-[1.05rem]"
+                style={{
+                  border: "1.8px solid var(--ink)",
+                  background: "var(--sticky-y)",
+                  fontFamily: "var(--font-sketch), serif",
+                  boxShadow: "2px 2px 0 rgba(28,28,28,0.18)",
+                }}
+              >
+                {i + 1}
+              </span>
+              <div>
+                <h3
+                  className="text-[1.2rem] mb-1"
+                  style={{ fontFamily: "var(--font-sketch), serif" }}
+                >
+                  {s.t}
+                </h3>
+                <p className="text-[0.94rem]" style={{ color: "var(--ink-2)" }}>
+                  {s.d}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-12">
+          <Link href="/new" className="btn btn-red text-[1.05rem]">
+            Start a notebook <ArrowRight size={16} />
+          </Link>
+        </div>
+      </section>
+
+      <footer
+        className="py-10 px-5 text-center text-[0.85rem]"
+        style={{ borderTop: "1.5px solid rgba(28,28,28,0.12)", color: "var(--ink-3)" }}
+      >
+        Made by{" "}
+        <a
+          href="https://github.com/Varshithvhegde"
+          className="underline"
+          style={{ color: "var(--red)" }}
+        >
+          Varshith
+        </a>{" "}
+        ·{" "}
+        <a href="https://github.com/Varshithvhegde/sharepad" className="underline">
+          Source on GitHub
+        </a>
       </footer>
+    </div>
+  );
+}
+
+function NotebookMark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden>
+      <rect
+        x="4.5"
+        y="2.5"
+        width="18"
+        height="21"
+        fill="#fff"
+        stroke="var(--ink)"
+        strokeWidth="1.8"
+      />
+      <line x1="9" y1="2.5" x2="9" y2="23.5" stroke="var(--red)" strokeWidth="1.4" />
+      <line x1="12" y1="8" x2="19" y2="8" stroke="var(--ink)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="12" y1="12" x2="19" y2="12" stroke="var(--ink)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="12" y1="16" x2="16" y2="16" stroke="var(--ink)" strokeWidth="1.4" strokeLinecap="round" />
+      <rect x="1.5" y="5" width="4" height="2.6" fill="var(--sticky-y)" stroke="var(--ink)" strokeWidth="1.2" />
+      <rect x="1.5" y="11" width="4" height="2.6" fill="var(--sticky-b)" stroke="var(--ink)" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+function NotebookPreview() {
+  const tabs = [
+    { label: "Trip plan", color: "var(--sticky-y)" },
+    { label: "Packing", color: "var(--sticky-b)" },
+    { label: "Budget", color: "var(--sticky-p)" },
+  ];
+
+  return (
+    <div className="relative mx-auto w-full max-w-[26rem] note-enter" style={{ ["--rot" as string]: "1.2deg" }}>
+      <span
+        className="tape tape-y"
+        style={{ top: -10, left: "38%", transform: "rotate(-3deg)", width: 66, height: 18 }}
+      />
+
+      {/* Index tabs down the right edge */}
+      <div className="absolute -right-2 top-12 flex flex-col gap-2 z-20">
+        {tabs.map((t, i) => (
+          <span
+            key={t.label}
+            className="text-[0.72rem] px-2 py-1"
+            style={{
+              background: t.color,
+              border: "1.5px solid var(--ink)",
+              boxShadow: "2px 2px 0 rgba(28,28,28,0.15)",
+              opacity: i === 0 ? 1 : 0.75,
+            }}
+          >
+            {t.label}
+          </span>
+        ))}
+      </div>
+
+      <div className="sk" style={{ transform: "rotate(1.2deg)" }}>
+        <div className="sk-b" />
+        <div className="sk-i">
+          <div
+            className="flex items-center gap-2 px-4 py-2.5"
+            style={{ borderBottom: "1.5px solid var(--rule)" }}
+          >
+            <span className="text-[0.95rem]">🧭</span>
+            <span className="text-[0.92rem]">Iceland, March</span>
+            <span className="stamp ml-auto">10 days left</span>
+          </div>
+
+          <div className="margin-rule paper-ruled px-4 py-4 pl-14 min-h-[17rem]">
+            <h3
+              className="text-[1.3rem] mb-2"
+              style={{ fontFamily: "var(--font-sketch), serif" }}
+            >
+              Trip plan
+            </h3>
+            <p className="text-[0.9rem] mb-3" style={{ color: "var(--ink-2)" }}>
+              Landing Thursday morning, picking the car up at the airport.
+            </p>
+            <ul className="text-[0.9rem] space-y-1.5">
+              <li>✅ Book the guesthouse</li>
+              <li>✅ Rent the 4×4</li>
+              <li style={{ color: "var(--ink-3)" }}>◻︎ Ring road route</li>
+              <li style={{ color: "var(--ink-3)" }}>◻︎ Northern lights forecast</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

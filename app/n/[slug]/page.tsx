@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { stripSensitiveNotebook, sortPages, notebookAccessible } from "@/lib/notebooks";
+import { sortPages, stripSensitiveNotebook, notebookAccessible } from "@/lib/notebooks";
 import PasswordGate from "@/components/PasswordGate";
 import NotebookEditor from "@/components/NotebookEditor";
 import type { Notebook, Page } from "@/lib/types";
@@ -32,11 +32,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {
     const admin = createAdminClient();
-    const { data } = await admin.from("notebooks").select("title, description, emoji").eq("slug", slug).single();
-    if (!data) return { title: "Not Found" };
+    const { data } = await admin
+      .from("notebooks")
+      .select("title, description, emoji")
+      .eq("slug", slug)
+      .single();
+
+    if (!data) return { title: "Not found — SharePad" };
+
     return {
       title: `${data.emoji} ${data.title} — SharePad`,
-      description: data.description || `Shared notebook: ${data.title}`,
+      description: data.description || `A shared notebook: ${data.title}`,
       openGraph: {
         title: `${data.emoji} ${data.title}`,
         description: data.description || undefined,
@@ -50,23 +56,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ViewNotebookPage({ params }: Props) {
   const { slug } = await params;
-  let data;
-  try {
-    data = await loadNotebook(slug);
-  } catch {
-    notFound();
-  }
+
+  const data = await loadNotebook(slug).catch(() => null);
   if (!data) notFound();
 
   const { notebook, pages } = data;
+
   const cookieStore = await cookies();
   const unlocked = cookieStore.get(`sp_unlock_${slug}`)?.value === "1";
 
   if (notebook.has_password && !unlocked) {
-    const theme = notebook.theme === "paper" ? "paper" : "dark";
-    return <PasswordGate slug={slug} title={notebook.title} theme={theme} />;
+    return <PasswordGate slug={slug} title={notebook.title} />;
   }
 
+  // View counting is best-effort; a failure here should never block reading.
   try {
     const admin = createAdminClient();
     await admin.rpc("increment_notebook_views", { notebook_slug: slug });
@@ -74,15 +77,8 @@ export default async function ViewNotebookPage({ params }: Props) {
       await admin.rpc("consume_burn_link", { notebook_slug: slug });
     }
   } catch {
-    // Non-critical
+    // ignored
   }
 
-  return (
-    <NotebookEditor
-      notebook={notebook}
-      pages={pages}
-      editToken=""
-      mode="view"
-    />
-  );
+  return <NotebookEditor notebook={notebook} pages={pages} editToken="" mode="view" />;
 }

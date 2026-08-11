@@ -1,45 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  generateEditToken,
-  hashEditToken,
-  hashPassword,
-} from "@/lib/crypto";
-import { generateSlug, generatePageSlug, isValidSlug } from "@/lib/slug";
+import { generateEditToken, hashEditToken, hashPassword } from "@/lib/crypto";
+import { generateSlug, generatePageSlug, isValidSlug, RESERVED_SLUGS } from "@/lib/slug";
 import { stripSensitiveNotebook } from "@/lib/notebooks";
+import { DEFAULT_EXPIRY_DAYS } from "@/lib/expiry";
+import { WELCOME_PAGE } from "@/lib/templates";
 import type { CreateNotebookInput } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as CreateNotebookInput;
-    const title = body.title?.trim() || "Untitled Notebook";
-    let slug = body.slug?.trim() ? body.slug.trim().toLowerCase() : generateSlug(title);
+    const title = body.title?.trim() || "Untitled notebook";
+    const requestedSlug = body.slug?.trim().toLowerCase();
 
-    if (!isValidSlug(slug)) {
-      return NextResponse.json(
-        { error: "Invalid slug. Use lowercase letters, numbers, and hyphens." },
-        { status: 400 }
-      );
+    let slug: string;
+    if (requestedSlug) {
+      if (!isValidSlug(requestedSlug) || RESERVED_SLUGS.has(requestedSlug)) {
+        return NextResponse.json(
+          { error: "That link is not available. Use letters, numbers and hyphens." },
+          { status: 400 }
+        );
+      }
+      slug = requestedSlug;
+    } else {
+      slug = generateSlug(title);
     }
 
     const admin = createAdminClient();
     const existing = await admin.from("notebooks").select("id").eq("slug", slug).maybeSingle();
     if (existing.data) {
+      if (requestedSlug) {
+        return NextResponse.json({ error: "That link is already taken." }, { status: 409 });
+      }
       slug = generateSlug(title);
     }
 
     const editToken = generateEditToken();
-    const editTokenHash = hashEditToken(editToken);
 
     let passwordHash: string | null = null;
     if (body.password?.trim()) {
       passwordHash = await hashPassword(body.password.trim());
     }
 
+    // `null` means keep forever; omitting the field falls back to the default window.
+    const expiryDays =
+      body.expiresInDays === null
+        ? null
+        : typeof body.expiresInDays === "number" && body.expiresInDays > 0
+          ? body.expiresInDays
+          : DEFAULT_EXPIRY_DAYS;
+
     let expiresAt: string | null = null;
-    if (body.expiresInDays && body.expiresInDays > 0) {
+    if (expiryDays !== null) {
       const d = new Date();
-      d.setDate(d.getDate() + body.expiresInDays);
+      d.setDate(d.getDate() + expiryDays);
       expiresAt = d.toISOString();
     }
 
@@ -50,8 +64,8 @@ export async function POST(req: NextRequest) {
         title,
         description: body.description?.trim() || null,
         emoji: body.emoji || "📝",
-        theme: body.theme || "dark",
-        edit_token_hash: editTokenHash,
+        theme: body.theme || "ruled",
+        edit_token_hash: hashEditToken(editToken),
         password_hash: passwordHash,
         expires_at: expiresAt,
       })
@@ -62,26 +76,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const pageSlug = generatePageSlug("welcome");
-    await admin.from("pages").insert({
-      notebook_id: notebook.id,
-      slug: pageSlug,
-      title: "Welcome",
-      icon: "👋",
-      content: `# Welcome to ${title}
+    const pages = body.pages?.length
+      ? body.pages
+      : [{ title: "First page", icon: "👋", content: WELCOME_PAGE(title) }];
 
-This is your first page. Start writing in **markdown**!
-
-## Features
-- Multi-page notebooks in one link
-- Live markdown preview
-- Share view & edit links separately
-- No signup required
-
-> Save your **edit link** — it's the only way to manage this notebook.
-`,
-      sort_order: 0,
-    });
+    await admin.from("pages").insert(
+      pages.map((p, i) => ({
+        notebook_id: notebook.id,
+        slug: generatePageSlug(p.title) + (i > 0 ? `-${i}` : ""),
+        title: p.title,
+        icon: p.icon || "📄",
+        content: p.content || "",
+        sort_order: i,
+      }))
+    );
 
     return NextResponse.json({
       notebook: stripSensitiveNotebook(notebook),
@@ -90,7 +98,7 @@ This is your first page. Start writing in **markdown**!
       viewUrl: `/n/${slug}`,
     });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Failed to create notebook";
+    const message = e instanceof Error ? e.message : "Could not create the notebook";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

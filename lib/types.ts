@@ -1,4 +1,4 @@
-export type NotebookTheme = "dark" | "paper" | "auto";
+export type PaperTexture = "ruled" | "grid" | "dot" | "plain";
 export type NotebookVisibility = "public" | "unlisted" | "private";
 
 export interface Notebook {
@@ -7,7 +7,7 @@ export interface Notebook {
   title: string;
   description: string | null;
   emoji: string;
-  theme: NotebookTheme;
+  theme: PaperTexture;
   visibility: NotebookVisibility;
   read_only: boolean;
   burn_after_read: boolean;
@@ -60,16 +60,17 @@ export interface CreateNotebookInput {
   slug?: string;
   description?: string;
   emoji?: string;
-  theme?: NotebookTheme;
+  theme?: PaperTexture;
   password?: string;
-  expiresInDays?: number;
+  expiresInDays?: number | null;
+  pages?: { title: string; icon?: string; content?: string }[];
 }
 
 export interface UpdateNotebookInput {
   title?: string;
   description?: string;
   emoji?: string;
-  theme?: NotebookTheme;
+  theme?: PaperTexture;
   visibility?: NotebookVisibility;
   read_only?: boolean;
   burn_after_read?: boolean;

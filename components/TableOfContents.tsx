@@ -2,26 +2,25 @@
 
 import { extractToc } from "@/lib/notebooks";
 
-interface TableOfContentsProps {
-  content: string;
-  theme?: "dark" | "paper";
-}
-
-export default function TableOfContents({ content, theme = "dark" }: TableOfContentsProps) {
+export default function TableOfContents({ content }: { content: string }) {
   const toc = extractToc(content);
-  if (toc.length === 0) return null;
-
-  const muted = theme === "paper" ? "text-[var(--paper-ink-2)]" : "text-[var(--ink-2)]";
+  if (toc.length < 2) return null;
 
   return (
-    <nav className={`text-sm ${muted}`}>
-      <p className="text-xs uppercase tracking-widest mb-2 opacity-60">On this page</p>
+    <nav aria-label="On this page">
+      <h2
+        className="text-[1.05rem] mb-2"
+        style={{ fontFamily: "var(--font-sketch), serif" }}
+      >
+        On this page
+      </h2>
       <ul className="space-y-1">
         {toc.map((item, i) => (
-          <li key={i} style={{ paddingLeft: `${(item.level - 1) * 12}px` }}>
+          <li key={`${item.id}-${i}`} style={{ paddingLeft: (item.level - 1) * 14 }}>
             <a
               href={`#${item.id}`}
-              className="hover:text-[var(--accent)] transition-colors"
+              className="text-[0.9rem] hover:underline"
+              style={{ color: "var(--ink-2)" }}
             >
               {item.text}
             </a>
