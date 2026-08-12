@@ -40,8 +40,11 @@ Apply the SQL in `supabase/migrations/` in order via the Supabase SQL editor, or
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000   # https://sharepad.in in production
 ```
+
+`NEXT_PUBLIC_SITE_URL` feeds canonical URLs, the sitemap, `llms.txt` and the
+links shown in the share panel, so it has to be the real origin once deployed.
 
 ## How expiry works
 

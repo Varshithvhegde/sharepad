@@ -3,11 +3,9 @@ name: Keep Supabase alive
 # Supabase pauses a free project after seven days without activity. Every three
 # days leaves room for one run to fail without the project going down.
 #
-# Set the repository variable SITE_URL to the deployed origin
-# (Settings → Secrets and variables → Actions → Variables), e.g.
-#   SITE_URL = https://sharepad.example.com
-# Until then the job skips rather than failing, so it does not send a failure
-# email every three days while the site is unpublished.
+# Pings the live site. Override the target by setting a SITE_URL repository
+# variable (Settings → Secrets and variables → Actions → Variables), which is
+# useful for a staging deploy.
 
 on:
   schedule:
@@ -22,13 +20,8 @@ jobs:
     steps:
       - name: Ping the database
         env:
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://sharepad.in' }}
         run: |
-          if [ -z "$SITE_URL" ]; then
-            echo "SITE_URL is not set — skipping. Add it as a repository variable once deployed."
-            exit 0
-          fi
-
           URL="${SITE_URL%/}/api/ping"
           echo "Pinging $URL"
 

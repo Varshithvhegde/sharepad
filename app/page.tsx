@@ -22,7 +22,7 @@ const capabilities = [
     rot: "1deg",
     color: "sn-b",
     title: "Pick your own link",
-    body: "Claim sharepad.app/n/kitchen-reno while you type. Taken names tell you right away.",
+    body: "Claim sharepad.in/n/kitchen-reno while you type. Taken names tell you right away.",
   },
   {
     tape: "p",

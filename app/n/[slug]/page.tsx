@@ -3,11 +3,10 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sortPages, stripSensitiveNotebook, notebookAccessible } from "@/lib/notebooks";
+import { SITE_URL } from "@/lib/site";
 import PasswordGate from "@/components/PasswordGate";
 import NotebookEditor from "@/components/NotebookEditor";
 import type { Notebook, Page } from "@/lib/types";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 type Props = { params: Promise<{ slug: string }> };
 

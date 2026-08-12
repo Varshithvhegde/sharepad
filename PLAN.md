@@ -20,7 +20,7 @@
 | **GFM support** | Tables, task lists, strikethrough, autolinks |
 | **Syntax highlighting** | Code blocks with rehype-highlight |
 | **Share links** | View URL (`/n/slug`) + Edit URL (`/e/token`) |
-| **Custom slugs** | Pick your URL: `sharepad.app/n/my-project-notes` |
+| **Custom slugs** | Pick your URL: `sharepad.in/n/my-project-notes` |
 | **Password lock** | Optional password to view (bcrypt hashed) |
 | **Read-only mode** | Toggle notebook to view-only (edit token still works) |
 | **Local recovery** | Edit tokens saved in browser localStorage ("My Notebooks") |
