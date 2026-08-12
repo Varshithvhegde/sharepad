@@ -41,6 +41,17 @@ const COMPONENTS = {
       {children}
     </a>
   ),
+  // Incomplete image syntax (e.g. ![]( ) while uploading) must not render an img
+  // with an empty src — the browser refetches the whole page for that.
+  img: ({ src, alt, ...props }: ComponentPropsWithoutRef<"img">) => {
+    const url = typeof src === "string" ? src.trim() : "";
+    if (!url) {
+      return alt?.trim() ? (
+        <span className="text-[var(--ink-3)] italic">{alt}</span>
+      ) : null;
+    }
+    return <img src={url} alt={alt ?? ""} loading="lazy" decoding="async" {...props} />;
+  },
 };
 
 const REMARK = [remarkGfm];
