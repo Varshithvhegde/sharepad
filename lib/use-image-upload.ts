@@ -38,8 +38,12 @@ export function useImageUpload({
         return;
       }
 
-      const marker = `uploading-${++counter.current}`;
-      const placeholder = `![${marker}]()`;
+      /*
+       * Plain text rather than image syntax: an empty `![](  )` renders an img
+       * with no src, which the browser complains about and which shows as a
+       * broken image for the second or two the upload takes.
+       */
+      const placeholder = `⏳ uploading image ${++counter.current}…`;
       insert(placeholder);
       setUploading((n) => n + 1);
 

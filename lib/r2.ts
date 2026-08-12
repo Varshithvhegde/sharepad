@@ -54,6 +54,13 @@ export async function putObject(
       body: body as BodyInit,
       headers: {
         "Content-Type": contentType,
+        /*
+         * Set explicitly because fetch switches to chunked encoding once a body
+         * is beyond a few tens of kilobytes, and R2 answers a PUT without a
+         * length with 411. Small images happened to fit in one chunk, so this
+         * only bit real photographs.
+         */
+        "Content-Length": String(body.byteLength),
         // Keys carry a random component and are never reused, so a long cache
         // is safe and keeps repeat views off the origin entirely.
         "Cache-Control": "public, max-age=31536000, immutable",

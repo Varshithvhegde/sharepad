@@ -97,7 +97,9 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     // Logged rather than swallowed: a silent 502 is impossible to diagnose.
     console.error("[images] upload to R2 failed:", e);
-    return fail("The image store did not accept that file. Try again.", 502);
+    const detail =
+      process.env.NODE_ENV === "development" && e instanceof Error ? ` (${e.message})` : "";
+    return fail(`The image store did not accept that file. Try again.${detail}`, 502);
   }
 
   const { error: insertError } = await admin.from("images").insert({
