@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 export default function PasswordGate({ slug, title }: { slug: string; title: string }) {
   const [password, setPassword] = useState("");
@@ -23,6 +24,7 @@ export default function PasswordGate({ slug, title }: { slug: string; title: str
         setError(data.error === "Wrong password" ? "That password doesn't match." : "Could not unlock this notebook.");
         return;
       }
+      track({ name: "notebook_unlocked", props: {} });
       window.location.reload();
     } catch {
       setError("Could not reach the server. Try again.");

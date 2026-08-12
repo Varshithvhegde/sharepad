@@ -1,32 +1,116 @@
+"use client";
+
+import { useCallback, useSyncExternalStore } from "react";
 import type { SavedNotebook } from "./types";
 
 const KEY = "sharepad_notebooks";
+const CHANGED = "sharepad:notebooks-changed";
+
+/*
+ * localStorage is an external store, so it is read through useSyncExternalStore
+ * rather than copied into state inside an effect. Besides satisfying the rules
+ * of React, this means the list updates itself when a notebook is added or
+ * removed — including from another tab.
+ */
+
+let cachedRaw: string | null = null;
+let cached: SavedNotebook[] = [];
+
+function readStore(): SavedNotebook[] {
+  const raw = localStorage.getItem(KEY);
+  // getSnapshot must return a stable reference or React re-renders forever.
+  if (raw !== cachedRaw) {
+    cachedRaw = raw;
+    try {
+      cached = raw ? (JSON.parse(raw) as SavedNotebook[]) : [];
+    } catch {
+      cached = [];
+    }
+  }
+  return cached;
+}
+
+function writeStore(notebooks: SavedNotebook[]): void {
+  localStorage.setItem(KEY, JSON.stringify(notebooks));
+  window.dispatchEvent(new Event(CHANGED));
+}
+
+function subscribe(onChange: () => void): () => void {
+  // `storage` fires in other tabs; the custom event covers this one.
+  window.addEventListener("storage", onChange);
+  window.addEventListener(CHANGED, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(CHANGED, onChange);
+  };
+}
+
+const EMPTY: SavedNotebook[] = [];
+
+/** Nothing is known about the browser's storage while rendering on the server. */
+function serverSnapshot(): SavedNotebook[] {
+  return EMPTY;
+}
+
+export function useSavedNotebooks(): SavedNotebook[] {
+  return useSyncExternalStore(subscribe, readStore, serverSnapshot);
+}
 
 export function getSavedNotebooks(): SavedNotebook[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as SavedNotebook[]) : [];
-  } catch {
-    return [];
-  }
+  if (typeof window === "undefined") return EMPTY;
+  return readStore();
 }
 
 export function saveNotebook(entry: SavedNotebook): void {
   if (typeof window === "undefined") return;
-  const existing = getSavedNotebooks().filter((n) => n.slug !== entry.slug);
-  existing.unshift(entry);
-  localStorage.setItem(KEY, JSON.stringify(existing.slice(0, 50)));
+  const rest = getSavedNotebooks().filter((n) => n.editToken !== entry.editToken);
+  writeStore([entry, ...rest].slice(0, 50));
 }
 
 export function removeSavedNotebook(slug: string, editToken?: string): void {
   if (typeof window === "undefined") return;
-  const filtered = getSavedNotebooks().filter((n) =>
-    editToken ? n.editToken !== editToken : n.slug !== slug
+  writeStore(
+    getSavedNotebooks().filter((n) =>
+      editToken ? n.editToken !== editToken : n.slug !== slug
+    )
   );
-  localStorage.setItem(KEY, JSON.stringify(filtered));
 }
 
 export function getEditToken(slug: string): string | null {
   return getSavedNotebooks().find((n) => n.slug === slug)?.editToken ?? null;
+}
+
+/* ── A single stored preference, e.g. whether the panes scroll together ── */
+
+function flagSubscribe(onChange: () => void): () => void {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(CHANGED, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(CHANGED, onChange);
+  };
+}
+
+export function useStoredFlag(
+  key: string,
+  fallback: boolean
+): [boolean, (next: boolean) => void] {
+  const getValue = useCallback(() => {
+    const stored = localStorage.getItem(key);
+    return stored === null ? fallback : stored === "on";
+  }, [key, fallback]);
+
+  const getServerValue = useCallback(() => fallback, [fallback]);
+
+  const value = useSyncExternalStore(flagSubscribe, getValue, getServerValue);
+
+  const setValue = useCallback(
+    (next: boolean) => {
+      localStorage.setItem(key, next ? "on" : "off");
+      window.dispatchEvent(new Event(CHANGED));
+    },
+    [key]
+  );
+
+  return [value, setValue];
 }

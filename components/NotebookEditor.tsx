@@ -46,7 +46,7 @@ import { ToastContainer, useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Tooltip from "@/components/ui/Tooltip";
 import { sortPages } from "@/lib/notebooks";
-import { saveNotebook } from "@/lib/local-storage";
+import { saveNotebook, useStoredFlag } from "@/lib/local-storage";
 import { PAGE_TEMPLATES, PAGE_ICONS } from "@/lib/templates";
 import { expiryLabel, expiringSoon } from "@/lib/expiry";
 import { fontClass } from "@/lib/fonts";
@@ -102,7 +102,7 @@ export default function NotebookEditor({
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [dismissedExpiry, setDismissedExpiry] = useState(false);
 
-  const [syncScroll, setSyncScroll] = useState(true);
+  const [syncScroll, setSyncScroll] = useStoredFlag("sharepad_sync_scroll", true);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -165,11 +165,6 @@ export default function NotebookEditor({
     scrollLead.current = null;
     if (textareaRef.current) textareaRef.current.scrollTop = 0;
     if (previewRef.current) previewRef.current.scrollTop = 0;
-  }, []);
-
-  // Remember the preference; it is a matter of taste rather than a setting.
-  useEffect(() => {
-    if (localStorage.getItem("sharepad_sync_scroll") === "off") setSyncScroll(false);
   }, []);
 
   const mirrorScroll = useCallback(
@@ -342,6 +337,7 @@ export default function NotebookEditor({
     if (res.ok && data.page) {
       setPages((prev) => sortPages([...prev, data.page]));
       selectPage(data.page);
+      track({ name: "page_duplicated", props: {} });
       toast("Page duplicated", "success");
     }
   }
@@ -367,6 +363,7 @@ export default function NotebookEditor({
     if (res.ok) {
       const remaining = pages.filter((p) => p.id !== page.id);
       setPages(sortPages(remaining));
+      track({ name: "page_deleted", props: {} });
       if (activePageId === page.id && remaining[0]) selectPage(remaining[0]);
       toast("Page deleted", "success");
     }
@@ -818,11 +815,7 @@ export default function NotebookEditor({
               {isEdit && viewMode === "split" && (
                 <Tooltip label={syncScroll ? "Scrolling is linked" : "Scrolling is independent"}>
                   <button
-                    onClick={() => {
-                      const next = !syncScroll;
-                      setSyncScroll(next);
-                      localStorage.setItem("sharepad_sync_scroll", next ? "on" : "off");
-                    }}
+                    onClick={() => setSyncScroll(!syncScroll)}
                     aria-pressed={syncScroll}
                     aria-label="Link scrolling between the panes"
                     className="btn-ghost !px-1.5 hidden sm:flex"

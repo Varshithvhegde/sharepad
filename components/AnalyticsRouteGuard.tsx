@@ -22,7 +22,7 @@ export default function AnalyticsRouteGuard() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
+    if (!process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) return;
 
     try {
       if (isPrivate(pathname)) {

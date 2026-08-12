@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Trash2 } from "lucide-react";
-import { getSavedNotebooks, removeSavedNotebook } from "@/lib/local-storage";
+import { removeSavedNotebook, useSavedNotebooks } from "@/lib/local-storage";
 import SiteHeader from "@/components/marketing/SiteHeader";
 import SiteFooter from "@/components/marketing/SiteFooter";
 import SupportSection from "@/components/marketing/SupportSection";
-import type { SavedNotebook } from "@/lib/types";
 
 const TAB_COLORS = ["sn-y", "sn-b", "sn-p", "sn-g"];
 
@@ -71,11 +69,7 @@ const capabilities = [
 ];
 
 export default function HomePage() {
-  const [saved, setSaved] = useState<SavedNotebook[]>([]);
-
-  useEffect(() => {
-    setSaved(getSavedNotebooks());
-  }, []);
+  const saved = useSavedNotebooks();
 
   return (
     <div className="min-h-screen paper-dot">
@@ -189,11 +183,8 @@ export default function HomePage() {
                         Opens straight into editing
                       </p>
                     </Link>
-                    <button
-                      onClick={() => {
-                        removeSavedNotebook(nb.slug, nb.editToken);
-                        setSaved(getSavedNotebooks());
-                      }}
+                <button
+                  onClick={() => removeSavedNotebook(nb.slug, nb.editToken)}
                       className="btn-ghost mt-3 !px-2 !py-1 text-[0.78rem]"
                       title="Forget this link on this browser"
                     >

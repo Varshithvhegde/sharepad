@@ -114,6 +114,7 @@ export default function SettingsPanel({
       headers: { "X-Edit-Token": editToken },
     });
     if (res.ok) {
+      track({ name: "notebook_deleted", props: {} });
       removeSavedNotebook(notebook.slug, editToken);
       router.push("/");
     } else {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -36,7 +36,6 @@ export default function NewNotebookPage() {
   const [icon, setIcon] = useState("📝");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [slugState, setSlugState] = useState<SlugState>("idle");
   const [expiryDays, setExpiryDays] = useState<number | null>(DEFAULT_EXPIRY_DAYS);
   const [texture, setTexture] = useState<PaperTexture>("plain");
   const [font, setFont] = useState<NotebookFont>("hand");
@@ -51,27 +50,36 @@ export default function NewNotebookPage() {
 
   const effectiveSlug = slugTouched ? slug : slugify(title);
 
-  // Live availability check, debounced so we aren't hammering the API per keystroke.
-  const checkRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /*
+   * Availability is derived rather than stored: the result is kept alongside the
+   * address it describes, so a reply that arrives after the field has moved on
+   * cannot be shown against the wrong address.
+   */
+  const [checked, setChecked] = useState<{ slug: string; state: SlugState } | null>(null);
+  const slugState: SlugState = !effectiveSlug
+    ? "idle"
+    : checked?.slug === effectiveSlug
+      ? checked.state
+      : "checking";
+
+  // Debounced so we are not calling the API on every keystroke.
   useEffect(() => {
-    if (!effectiveSlug) {
-      setSlugState("idle");
-      return;
-    }
-    setSlugState("checking");
-    if (checkRef.current) clearTimeout(checkRef.current);
-    checkRef.current = setTimeout(async () => {
+    if (!effectiveSlug) return;
+
+    const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/slug-check?slug=${encodeURIComponent(effectiveSlug)}`);
         const data = (await res.json()) as { available: boolean; reason: string };
-        setSlugState(data.available ? "free" : data.reason === "taken" ? "taken" : "invalid");
+        setChecked({
+          slug: effectiveSlug,
+          state: data.available ? "free" : data.reason === "taken" ? "taken" : "invalid",
+        });
       } catch {
-        setSlugState("idle");
+        setChecked({ slug: effectiveSlug, state: "idle" });
       }
     }, 400);
-    return () => {
-      if (checkRef.current) clearTimeout(checkRef.current);
-    };
+
+    return () => clearTimeout(timer);
   }, [effectiveSlug]);
 
   async function handleCreate(e: React.FormEvent) {

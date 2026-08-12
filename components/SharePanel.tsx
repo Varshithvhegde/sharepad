@@ -28,6 +28,11 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
     track({ name: "notebook_shared", props: { via: "copy_link" } });
   }
 
+  function toggleQr() {
+    if (!showQr) track({ name: "notebook_shared", props: { via: "qr_code" } });
+    setShowQr((visible) => !visible);
+  }
+
   // Visitors to an openly editable notebook can share it, but they hold no
   // token, so there is no edit link to offer them.
   const links = [
@@ -128,7 +133,7 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
             )}
 
             <div className="flex items-center gap-3 mb-5">
-              <button onClick={() => setShowQr((v) => !v)} className="btn-ghost !px-0 text-[0.88rem]">
+              <button onClick={toggleQr} className="btn-ghost !px-0 text-[0.88rem]">
                 {showQr ? "Hide QR code" : "Show QR code"}
               </button>
             </div>

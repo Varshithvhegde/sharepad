@@ -11,10 +11,14 @@ import posthog from "posthog-js";
 export type AnalyticsEvent =
   | { name: "notebook_created"; props: NotebookCreatedProps }
   | { name: "page_added"; props: { template: string } }
+  | { name: "page_duplicated"; props: Record<string, never> }
+  | { name: "page_deleted"; props: Record<string, never> }
   | { name: "notebook_shared"; props: { via: "copy_link" | "qr_code" } }
   | { name: "export_started"; props: { format: "pdf" | "markdown" } }
   | { name: "settings_saved"; props: SettingsSavedProps }
-  | { name: "open_editing_used"; props: Record<string, never> }
+  | { name: "notebook_deleted"; props: Record<string, never> }
+  | { name: "comment_added"; props: Record<string, never> }
+  | { name: "notebook_unlocked"; props: Record<string, never> }
   | { name: "notebook_recovered"; props: Record<string, never> };
 
 interface NotebookCreatedProps {
@@ -38,7 +42,7 @@ interface SettingsSavedProps {
 }
 
 export function track(event: AnalyticsEvent): void {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
+  if (!process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) return;
   try {
     posthog.capture(event.name, event.props);
   } catch {

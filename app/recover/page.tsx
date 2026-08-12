@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 export default function RecoverPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function RecoverPage() {
       setError("That doesn't look like an edit link. Paste the whole /e/… address.");
       return;
     }
+    track({ name: "notebook_recovered", props: {} });
     router.push(`/e/${token}`);
   }
 

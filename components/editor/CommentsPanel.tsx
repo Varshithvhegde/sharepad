@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 import { formatDate } from "@/lib/format";
+import { track } from "@/lib/analytics";
 import type { Comment } from "@/lib/types";
 
 const TINTS = ["sn-y", "sn-b", "sn-p", "sn-g", "sn-o"];
@@ -11,19 +12,22 @@ export default function CommentsPanel({ pageId }: { pageId: string }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [name, setName] = useState("");
   const [text, setText] = useState("");
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  // Which page the comments in state belong to; anything else means still loading.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const loading = loadedFor !== pageId;
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     fetch(`/api/pages/${pageId}/comments`)
       .then((r) => r.json())
       .then((d) => {
-        if (!cancelled) setComments(d.comments ?? []);
+        if (cancelled) return;
+        setComments(d.comments ?? []);
+        setLoadedFor(pageId);
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+      .catch(() => {
+        if (!cancelled) setLoadedFor(pageId);
       });
     return () => {
       cancelled = true;
@@ -44,6 +48,7 @@ export default function CommentsPanel({ pageId }: { pageId: string }) {
       if (res.ok && data.comment) {
         setComments((prev) => [data.comment, ...prev]);
         setText("");
+        track({ name: "comment_added", props: {} });
       }
     } finally {
       setSending(false);
