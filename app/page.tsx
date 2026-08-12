@@ -109,18 +109,13 @@ export default function HomePage() {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="max-w-5xl mx-auto px-5 pt-16 pb-10 sm:pt-24">
+      <section id="main" className="max-w-5xl mx-auto px-5 pt-14 pb-10 sm:pt-20">
         <div className="grid lg:grid-cols-[1.05fr_1fr] gap-14 items-center">
           <div>
-            <span
-              className="text-[0.8rem] uppercase tracking-[0.16em]"
-              style={{ color: "var(--ink-3)" }}
-            >
-              Notebooks you can hand to anyone
-            </span>
+            <PinnedTag />
 
             <h1
-              className="mt-4 mb-1 leading-[1.06]"
+              className="mt-6 mb-1 leading-[1.06]"
               style={{
                 fontFamily: "var(--font-sketch), serif",
                 fontSize: "clamp(2.4rem, 6.5vw, 4rem)",
@@ -157,16 +152,16 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Link href="/quick" className="btn btn-ink text-[1.05rem]">
-                Paste something now <ArrowRight size={16} />
+              <Link href="/quick" className="btn btn-ink btn-lg">
+                Paste something now <ArrowRight size={18} />
               </Link>
-              <Link href="/new" className="btn text-[1.05rem]">
+              <Link href="/new" className="btn btn-lg">
                 Set one up properly
               </Link>
             </div>
 
-            <p className="mt-5 text-[0.85rem]" style={{ color: "var(--ink-3)" }}>
-              Free, and it stays free. Notes expire in 10 days unless you change it. ·{" "}
+            <p className="mt-5 text-[0.88rem]" style={{ color: "var(--ink-3)" }}>
+              Notes expire in 10 days unless you change it. ·{" "}
               <Link href="/recover" className="underline">
                 Already have an edit link?
               </Link>
@@ -370,6 +365,24 @@ export default function HomePage() {
           Source on GitHub
         </a>
       </footer>
+    </div>
+  );
+}
+
+/** The promise people most want confirmed before they start, pinned up front. */
+function PinnedTag() {
+  return (
+    <div className="relative inline-block">
+      <span
+        className="tape tape-o"
+        style={{ top: -8, left: 22, transform: "rotate(-5deg)", width: 40, height: 13 }}
+      />
+      <p className="sk sn-y" style={{ transform: "rotate(-1.2deg)" }}>
+        <span className="sk-b" style={{ borderWidth: "1.5px" }} />
+        <span className="sk-i block px-3.5 py-2 text-[0.9rem]">
+          Free forever · No sign-up · No email
+        </span>
+      </p>
     </div>
   );
 }

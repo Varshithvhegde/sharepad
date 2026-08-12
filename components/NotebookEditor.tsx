@@ -44,6 +44,7 @@ import CommentsPanel from "@/components/editor/CommentsPanel";
 import VersionHistory from "@/components/editor/VersionHistory";
 import { ToastContainer, useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import Tooltip from "@/components/ui/Tooltip";
 import { sortPages } from "@/lib/notebooks";
 import { saveNotebook } from "@/lib/local-storage";
 import { PAGE_TEMPLATES, PAGE_ICONS } from "@/lib/templates";
@@ -513,14 +514,17 @@ export default function NotebookEditor({
           </span>
 
           <div className="relative">
-            <button
-              onClick={() => setDownloadMenu((v) => !v)}
-              className="btn-ghost"
-              title="Download"
-              aria-expanded={downloadMenu}
-            >
-              <Download size={16} />
-            </button>
+            <Tooltip label="Download" align="end">
+              <button
+                onClick={() => setDownloadMenu((v) => !v)}
+                className="btn-ghost"
+                aria-label="Download"
+                aria-expanded={downloadMenu}
+                aria-haspopup="menu"
+              >
+                <Download size={16} />
+              </button>
+            </Tooltip>
             {downloadMenu && (
               // .sk is position:relative, so the offset lives on a wrapper.
               <div className="absolute top-full right-0 mt-1 z-30 w-52">
@@ -563,14 +567,22 @@ export default function NotebookEditor({
           </div>
 
           {isEdit && (
-            <button onClick={() => setShareOpen(true)} className="btn-ghost" title="Share">
-              <Share2 size={16} />
-            </button>
+            <Tooltip label="Share" align="end">
+              <button onClick={() => setShareOpen(true)} className="btn-ghost" aria-label="Share">
+                <Share2 size={16} />
+              </button>
+            </Tooltip>
           )}
           {isOwner && (
-            <button onClick={() => setSettingsOpen(true)} className="btn-ghost" title="Settings">
-              <SettingsIcon size={16} />
-            </button>
+            <Tooltip label="Settings" align="end">
+              <button
+                onClick={() => setSettingsOpen(true)}
+                className="btn-ghost"
+                aria-label="Settings"
+              >
+                <SettingsIcon size={16} />
+              </button>
+            </Tooltip>
           )}
         </div>
       </header>
@@ -796,54 +808,72 @@ export default function NotebookEditor({
 
             <div className="flex items-center gap-0.5 shrink-0">
               {isEdit && viewMode === "split" && (
-                <button
-                  onClick={() => {
-                    const next = !syncScroll;
-                    setSyncScroll(next);
-                    localStorage.setItem("sharepad_sync_scroll", next ? "on" : "off");
-                  }}
-                  aria-pressed={syncScroll}
-                  className="btn-ghost !px-1.5 hidden sm:flex"
-                  title={syncScroll ? "Scrolling is linked" : "Scrolling is independent"}
-                  style={
-                    syncScroll
-                      ? { background: "var(--sticky-y)", borderColor: "rgba(28,28,28,0.25)" }
-                      : undefined
-                  }
-                >
-                  <ArrowDownUp size={14} />
-                </button>
+                <Tooltip label={syncScroll ? "Scrolling is linked" : "Scrolling is independent"}>
+                  <button
+                    onClick={() => {
+                      const next = !syncScroll;
+                      setSyncScroll(next);
+                      localStorage.setItem("sharepad_sync_scroll", next ? "on" : "off");
+                    }}
+                    aria-pressed={syncScroll}
+                    aria-label="Link scrolling between the panes"
+                    className="btn-ghost !px-1.5 hidden sm:flex"
+                    style={
+                      syncScroll
+                        ? { background: "var(--sticky-y)", borderColor: "rgba(28,28,28,0.25)" }
+                        : undefined
+                    }
+                  >
+                    <ArrowDownUp size={14} />
+                  </button>
+                </Tooltip>
               )}
 
               {isEdit && activePage && (
                 <>
-                  <button onClick={() => fileInputRef.current?.click()} className="btn-ghost !px-1.5" title="Import a .md file">
-                    <Upload size={14} />
-                  </button>
-                  <button onClick={() => setHistoryOpen(true)} className="btn-ghost !px-1.5" title="Version history">
-                    <History size={14} />
-                  </button>
+                  <Tooltip label="Import a .md file">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="btn-ghost !px-1.5"
+                      aria-label="Import a markdown file"
+                    >
+                      <Upload size={14} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip label="Earlier drafts">
+                    <button
+                      onClick={() => setHistoryOpen(true)}
+                      className="btn-ghost !px-1.5"
+                      aria-label="Earlier drafts"
+                    >
+                      <History size={14} />
+                    </button>
+                  </Tooltip>
                 </>
               )}
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(isEdit ? content : activePage?.content ?? "");
-                  toast("Markdown copied", "success");
-                }}
-                className="btn-ghost !px-1.5"
-                title="Copy markdown"
-              >
-                <Copy size={14} />
-              </button>
-              <a
-                href={`/n/${notebook.slug}/print`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-ghost !px-1.5 hidden sm:flex"
-                title="Print or save as PDF"
-              >
-                <Printer size={14} />
-              </a>
+              <Tooltip label="Copy markdown">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(isEdit ? content : activePage?.content ?? "");
+                    toast("Markdown copied", "success");
+                  }}
+                  className="btn-ghost !px-1.5"
+                  aria-label="Copy markdown"
+                >
+                  <Copy size={14} />
+                </button>
+              </Tooltip>
+              <Tooltip label="Print or save as PDF" align="end">
+                <a
+                  href={`/n/${notebook.slug}/print`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-ghost !px-1.5 hidden sm:flex"
+                  aria-label="Print or save as PDF"
+                >
+                  <Printer size={14} />
+                </a>
+              </Tooltip>
             </div>
           </div>
 

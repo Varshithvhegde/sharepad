@@ -1,0 +1,17 @@
+import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
+
+/**
+ * Only the public entry points. Notebooks themselves are unlisted — listing
+ * them would defeat the point of an unguessable link.
+ */
+export default function sitemap(): MetadataRoute.Sitemap {
+  const updated = new Date();
+
+  return [
+    { url: SITE_URL, lastModified: updated, changeFrequency: "monthly", priority: 1 },
+    { url: `${SITE_URL}/quick`, lastModified: updated, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${SITE_URL}/new`, lastModified: updated, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/recover`, lastModified: updated, changeFrequency: "yearly", priority: 0.4 },
+  ];
+}

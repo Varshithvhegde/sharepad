@@ -34,23 +34,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const admin = createAdminClient();
     const { data } = await admin
       .from("notebooks")
-      .select("title, description, emoji")
+      .select("title, description, emoji, visibility")
       .eq("slug", slug)
       .single();
 
-    if (!data) return { title: "Not found — SharePad" };
+    if (!data) return { title: "Not found" };
+
+    const description = data.description || `A shared notebook: ${data.title}`;
+    // Unlisted notebooks are only meant to be found by people holding the link.
+    const indexable = data.visibility === "public";
 
     return {
-      title: `${data.emoji} ${data.title} — SharePad`,
-      description: data.description || `A shared notebook: ${data.title}`,
+      title: `${data.emoji} ${data.title}`,
+      description,
+      alternates: { canonical: `/n/${slug}` },
+      robots: { index: indexable, follow: indexable },
       openGraph: {
+        type: "article",
         title: `${data.emoji} ${data.title}`,
-        description: data.description || undefined,
+        description,
         url: `${SITE_URL}/n/${slug}`,
       },
+      twitter: { card: "summary_large_image", title: data.title, description },
     };
   } catch {
-    return { title: "SharePad" };
+    return { title: "Notebook" };
   }
 }
 

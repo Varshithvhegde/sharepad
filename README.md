@@ -2,6 +2,8 @@
 
 Write a notebook of markdown pages and share it with a single link. **No signup, no login.**
 
+![SharePad](./public/screenshot.png)
+
 ## What it does
 
 - **Multi-page notebooks** behind one address, with a tabbed page index
