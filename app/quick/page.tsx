@@ -248,6 +248,14 @@ export default function QuickSharePage() {
                   <Settings2 size={14} /> I want to choose the settings
                 </Link>
               </div>
+
+              <p className="text-[0.82rem] mt-5" style={{ color: "var(--ink-3)" }}>
+                No account is created, and this is not end-to-end encrypted.{" "}
+                <Link href="/privacy" className="underline">
+                  What happens to what you write
+                </Link>
+                .
+              </p>
             </div>
           </form>
         </div>

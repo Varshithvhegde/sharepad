@@ -479,6 +479,14 @@ export default function NewNotebookPage() {
                   </>
                 )}
               </button>
+
+              <p className="text-[0.82rem] mt-4 text-center" style={{ color: "var(--ink-3)" }}>
+                No account is created.{" "}
+                <Link href="/privacy" className="underline">
+                  What happens to what you write
+                </Link>
+                .
+              </p>
             </div>
           </form>
         </div>

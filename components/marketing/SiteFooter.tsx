@@ -49,6 +49,11 @@ export default function SiteFooter() {
               </a>
             </li>
             <li>
+              <Link href="/privacy" className="hover:underline">
+                Privacy
+              </Link>
+            </li>
+            <li>
               <a href="https://github.com/Varshithvhegde" className="hover:underline">
                 Made by Varshith
               </a>
