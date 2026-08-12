@@ -6,8 +6,16 @@ export const IMAGE_LIMITS = {
   maxPerNotebook: 50,
   /** Longest edge kept when resizing before upload. */
   maxDimension: 1600,
-  /** Uploads allowed from one address per window. */
-  rateLimit: { max: 20, windowSeconds: 600 },
+  /**
+   * Uploads allowed from one address per window.
+   *
+   * Set well above what writing looks like — illustrating a page can easily
+   * mean a dozen screenshots in a few minutes — while still bounding what a
+   * script can push through. The per-notebook cap is what limits any single
+   * notebook; this only exists to stop the service being used as a dumping
+   * ground across many of them.
+   */
+  rateLimit: { max: 60, windowSeconds: 600 },
 } as const;
 
 export const ALLOWED_IMAGE_TYPES = [

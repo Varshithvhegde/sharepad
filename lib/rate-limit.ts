@@ -45,9 +45,14 @@ export async function checkRateLimit(
 
     if (error) return { allowed: true, retryAfterSeconds: 0 };
 
+    // Windows are fixed, so the wait is until this one ends — not a further
+    // full window, which would overstate it for anyone near the boundary.
+    const now = Math.floor(Date.now() / 1000);
+    const windowEnds = (Math.floor(now / windowSeconds) + 1) * windowSeconds;
+
     return {
       allowed: data !== false,
-      retryAfterSeconds: data === false ? windowSeconds : 0,
+      retryAfterSeconds: data === false ? Math.max(1, windowEnds - now) : 0,
     };
   } catch {
     return { allowed: true, retryAfterSeconds: 0 };

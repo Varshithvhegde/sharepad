@@ -25,9 +25,12 @@ export async function POST(req: NextRequest) {
     IMAGE_LIMITS.rateLimit.windowSeconds
   );
   if (!limit.allowed) {
-    return fail("Too many uploads just now. Try again in a few minutes.", 429, {
-      "Retry-After": String(limit.retryAfterSeconds),
-    });
+    const minutes = Math.max(1, Math.ceil(limit.retryAfterSeconds / 60));
+    return fail(
+      `That is a lot of images at once. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      429,
+      { "Retry-After": String(limit.retryAfterSeconds) }
+    );
   }
 
   let form: FormData;
