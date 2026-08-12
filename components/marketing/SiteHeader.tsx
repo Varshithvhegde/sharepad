@@ -20,6 +20,9 @@ export default function SiteHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-4">
+          <Link href="/blog" className="btn-ghost text-[0.9rem] hidden sm:inline-flex">
+            Blog
+          </Link>
           <Link href="/recover" className="btn-ghost text-[0.9rem]">
             <KeyRound size={14} />
             <span className="hidden sm:inline">I have an edit link</span>

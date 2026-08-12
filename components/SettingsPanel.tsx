@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, Trash2, X } from "lucide-react";
 import { removeSavedNotebook } from "@/lib/local-storage";
 import { EXPIRY_OPTIONS, daysUntil, expiryLabel } from "@/lib/expiry";
@@ -36,7 +35,6 @@ export default function SettingsPanel({
   onClose,
   onUpdate,
 }: SettingsPanelProps) {
-  const router = useRouter();
   const { ask, dialog: confirmDialog } = useConfirm();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -116,7 +114,9 @@ export default function SettingsPanel({
     if (res.ok) {
       track({ name: "notebook_deleted", props: {} });
       removeSavedNotebook(notebook.slug, editToken);
-      router.push("/");
+      // Hard leave — soft nav can leave the editor sitting on a dead /e/ URL.
+      window.location.replace("/?deleted=1");
+      return;
     } else {
       setSaving(false);
       setError("Could not delete the notebook");

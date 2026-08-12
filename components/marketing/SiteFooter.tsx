@@ -8,7 +8,20 @@ export default function SiteFooter() {
       className="px-5 py-10"
       style={{ borderTop: "1.5px solid rgba(28,28,28,0.12)" }}
     >
-      <div className="max-w-5xl mx-auto grid sm:grid-cols-2 gap-8">
+      <div className="max-w-5xl mx-auto grid sm:grid-cols-3 gap-8">
+        <nav aria-label="Blog">
+          <h2 className="text-[1.05rem] mb-3" style={{ fontFamily: "var(--font-sketch), serif" }}>
+            Blog
+          </h2>
+          <ul className="space-y-1.5">
+            <li>
+              <Link href="/blog" className="text-[0.9rem] hover:underline" style={{ color: "var(--ink-2)" }}>
+                All posts
+              </Link>
+            </li>
+          </ul>
+        </nav>
+
         <nav aria-label="Guides">
           <h2 className="text-[1.05rem] mb-3" style={{ fontFamily: "var(--font-sketch), serif" }}>
             Guides

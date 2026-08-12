@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Trash2 } from "lucide-react";
+import { ArrowRight, Trash2, X } from "lucide-react";
 import { removeSavedNotebook, useSavedNotebooks } from "@/lib/local-storage";
 import SiteHeader from "@/components/marketing/SiteHeader";
 import SiteFooter from "@/components/marketing/SiteFooter";
@@ -71,12 +72,45 @@ const capabilities = [
 
 export default function HomePage() {
   const saved = useSavedNotebooks();
+  const [deletedNotice, setDeletedNotice] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("deleted") !== "1") return;
+    setDeletedNotice(true);
+    window.history.replaceState({}, "", "/");
+  }, []);
 
   return (
     // Tape strips and tilted cards overhang their boxes by a few pixels, which
     // is enough to give a phone a horizontal scrollbar.
     <div className="min-h-screen paper-dot overflow-x-hidden">
       <SiteHeader />
+
+      {deletedNotice && (
+        <div
+          className="max-w-5xl mx-auto px-5 pt-4"
+          role="status"
+        >
+          <div
+            className="flex items-center gap-3 px-4 py-3 text-[0.92rem]"
+            style={{
+              background: "var(--sticky-g)",
+              border: "1.5px solid rgba(28,28,28,0.16)",
+            }}
+          >
+            <span className="flex-1">Notebook deleted. The shared link no longer works.</span>
+            <button
+              type="button"
+              onClick={() => setDeletedNotice(false)}
+              className="btn-ghost !px-1.5 shrink-0"
+              aria-label="Dismiss"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <section id="main" className="max-w-5xl mx-auto px-5 pt-14 pb-10 sm:pt-20">

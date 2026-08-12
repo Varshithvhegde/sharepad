@@ -478,6 +478,20 @@ button {
   accent-color: var(--red);
 }
 
+/* Blog posts use serif body text but keep code in mono */
+.blog-article .markdown-body {
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+.blog-article .markdown-body :is(h1, h2, h3, h4) {
+  margin-top: 1.6em;
+}
+.blog-article .markdown-body img {
+  border: 1.5px solid rgba(28, 28, 28, 0.12);
+  border-radius: 2px;
+  margin: 1.25em 0;
+}
+
 /* ─── Focus visibility ───────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--red);

@@ -316,12 +316,16 @@ export default function NotebookEditor({
         e.preventDefault();
         setShortcutsOpen(true);
       } else if (e.key === "Escape") {
+        setShareOpen(false);
+        setSettingsOpen(false);
+        setHistoryOpen(false);
+        setHelpOpen(false);
         setShortcutsOpen(false);
+        setSidebarOpen(false);
         setTemplateMenu(false);
         setIconMenu(false);
         setDownloadMenu(false);
       }
-      // The formatting sheet closes itself, so it is not listed here.
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

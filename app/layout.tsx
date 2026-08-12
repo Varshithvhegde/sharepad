@@ -71,7 +71,13 @@ export const metadata: Metadata = {
   authors: [{ name: "Varshith Hegde", url: "https://github.com/Varshithvhegde" }],
   creator: "Varshith Hegde",
   alternates: { canonical: "/" },
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-icon.png",
+  },
   openGraph: {
     type: "website",
     url: SITE_URL,
