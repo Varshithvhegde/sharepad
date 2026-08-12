@@ -1,0 +1,52 @@
+name: Keep Supabase alive
+
+# Supabase pauses a free project after seven days without activity. Every three
+# days leaves room for one run to fail without the project going down.
+#
+# Set the repository variable SITE_URL to the deployed origin
+# (Settings → Secrets and variables → Actions → Variables), e.g.
+#   SITE_URL = https://sharepad.example.com
+# Until then the job skips rather than failing, so it does not send a failure
+# email every three days while the site is unpublished.
+
+on:
+  schedule:
+    - cron: "0 9 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping the database
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          if [ -z "$SITE_URL" ]; then
+            echo "SITE_URL is not set — skipping. Add it as a repository variable once deployed."
+            exit 0
+          fi
+
+          URL="${SITE_URL%/}/api/ping"
+          echo "Pinging $URL"
+
+          # A cold start can outlast the first request, so allow two retries
+          # before calling it a genuine failure.
+          for attempt in 1 2 3; do
+            STATUS=$(curl -sS -m 30 -o /tmp/ping-body -w "%{http_code}" "$URL" || echo "000")
+            BODY=$(cat /tmp/ping-body 2>/dev/null || true)
+
+            if [ "$STATUS" = "200" ]; then
+              echo "Attempt $attempt: $STATUS $BODY"
+              echo "Database reached; the idle timer is reset."
+              exit 0
+            fi
+
+            echo "Attempt $attempt failed with status $STATUS: $BODY"
+            [ "$attempt" -lt 3 ] && sleep 15
+          done
+
+          echo "::error::Could not reach the database after three attempts."
+          exit 1
