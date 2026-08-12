@@ -42,6 +42,7 @@ import SettingsPanel from "@/components/SettingsPanel";
 import MarkdownToolbar, { insertMarkdown } from "@/components/editor/MarkdownToolbar";
 import CommentsPanel from "@/components/editor/CommentsPanel";
 import VersionHistory from "@/components/editor/VersionHistory";
+import FormattingHelp from "@/components/editor/FormattingHelp";
 import { ToastContainer, useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Tooltip from "@/components/ui/Tooltip";
@@ -97,6 +98,7 @@ export default function NotebookEditor({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [templateMenu, setTemplateMenu] = useState(false);
   const [iconMenu, setIconMenu] = useState(false);
   const [downloadMenu, setDownloadMenu] = useState(false);
@@ -303,6 +305,7 @@ export default function NotebookEditor({
         setIconMenu(false);
         setDownloadMenu(false);
       }
+      // The formatting sheet closes itself, so it is not listed here.
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -928,7 +931,7 @@ export default function NotebookEditor({
                 className={`flex flex-col overflow-hidden ${activeMode === "split" ? "w-1/2" : "w-full"}`}
                 style={activeMode === "split" ? { borderRight: "1.5px solid rgba(28,28,28,0.12)" } : undefined}
               >
-                <MarkdownToolbar onInsert={applyFormat} />
+                <MarkdownToolbar onInsert={applyFormat} onShowHelp={() => setHelpOpen(true)} />
                 <textarea
                   ref={textareaRef}
                   value={content}
@@ -1001,6 +1004,7 @@ export default function NotebookEditor({
         />
       )}
       {shortcutsOpen && <ShortcutSheet onClose={() => setShortcutsOpen(false)} />}
+      {helpOpen && <FormattingHelp onClose={() => setHelpOpen(false)} />}
       {confirmDialog}
     </div>
   );

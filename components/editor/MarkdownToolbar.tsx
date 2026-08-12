@@ -3,6 +3,7 @@
 import {
   Bold,
   CheckSquare,
+  CircleQuestionMark,
   Code,
   Heading1,
   Heading2,
@@ -17,6 +18,7 @@ import {
 
 interface MarkdownToolbarProps {
   onInsert: (before: string, after?: string, placeholder?: string) => void;
+  onShowHelp: () => void;
 }
 
 const TOOLS = [
@@ -34,27 +36,40 @@ const TOOLS = [
   { Icon: Minus, title: "Divider", args: ["\n\n---\n\n", ""] },
 ] as const;
 
-export default function MarkdownToolbar({ onInsert }: MarkdownToolbarProps) {
+export default function MarkdownToolbar({ onInsert, onShowHelp }: MarkdownToolbarProps) {
   return (
     <div
-      className="flex items-center gap-0.5 px-2 py-1.5 overflow-x-auto shrink-0"
+      className="flex items-center gap-0.5 px-2 py-1.5 shrink-0"
       style={{
         borderBottom: "1.5px solid rgba(28,28,28,0.12)",
         background: "var(--paper-2)",
       }}
     >
-      {TOOLS.map(({ Icon, title, args }) => (
-        <button
-          key={title}
-          type="button"
-          title={title}
-          aria-label={title}
-          onClick={() => onInsert(args[0], args[1], args[2])}
-          className="btn-ghost !px-2 !py-1.5 shrink-0"
-        >
-          <Icon size={15} />
-        </button>
-      ))}
+      <div className="flex items-center gap-0.5 overflow-x-auto">
+        {TOOLS.map(({ Icon, title, args }) => (
+          <button
+            key={title}
+            type="button"
+            title={title}
+            aria-label={title}
+            onClick={() => onInsert(args[0], args[1], args[2])}
+            className="btn-ghost !px-2 !py-1.5 shrink-0"
+          >
+            <Icon size={15} />
+          </button>
+        ))}
+      </div>
+
+      {/* Nothing else advertises that tables, checklists or details blocks exist. */}
+      <button
+        type="button"
+        onClick={onShowHelp}
+        title="What you can write"
+        aria-label="What you can write"
+        className="btn-ghost !px-2 !py-1.5 shrink-0 ml-auto"
+      >
+        <CircleQuestionMark size={15} />
+      </button>
     </div>
   );
 }
