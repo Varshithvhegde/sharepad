@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Copy, Loader2, Settings2 } from "lucide-react";
 import { saveNotebook } from "@/lib/local-storage";
@@ -8,6 +8,7 @@ import { deriveTitle } from "@/lib/templates";
 import { DEFAULT_EXPIRY_DAYS } from "@/lib/expiry";
 import { DEFAULT_PAGE_ICON } from "@/lib/icons";
 import { track } from "@/lib/analytics";
+import { useTabIndent } from "@/lib/use-tab-indent";
 
 export default function QuickSharePage() {
   const [text, setText] = useState("");
@@ -16,6 +17,9 @@ export default function QuickSharePage() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ viewUrl: string; editUrl: string } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const handleTabIndent = useTabIndent(textareaRef, setText);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const title = deriveTitle(text);
@@ -189,8 +193,10 @@ export default function QuickSharePage() {
               </p>
 
               <textarea
+                ref={textareaRef}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleTabIndent}
                 placeholder={"Paste anything here.\n\nMarkdown works — # headings, **bold**, - lists, `code`."}
                 rows={12}
                 autoFocus
