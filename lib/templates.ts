@@ -17,14 +17,14 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
   {
     id: "blank",
     name: "Blank page",
-    icon: "📄",
+    icon: "file",
     title: "Untitled",
     content: "",
   },
   {
     id: "meeting",
     name: "Meeting notes",
-    icon: "📋",
+    icon: "checklist",
     title: "Meeting notes",
     content: `## Attendees
 
@@ -43,7 +43,7 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
   {
     id: "todo",
     name: "Task list",
-    icon: "✅",
+    icon: "target",
     title: "Tasks",
     content: `## Today
 - [ ]
@@ -56,7 +56,7 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
   {
     id: "readme",
     name: "Project readme",
-    icon: "📖",
+    icon: "book",
     title: "Readme",
     content: `## What this is
 
@@ -75,7 +75,7 @@ npm run dev
   {
     id: "journal",
     name: "Journal entry",
-    icon: "📔",
+    icon: "calendar",
     title: today(),
     content: `## What happened
 
@@ -89,15 +89,7 @@ npm run dev
   },
 ];
 
-export const PAGE_ICONS = [
-  "📄", "📝", "📋", "✅", "💡", "🔖", "📖", "📔",
-  "🎯", "⭐", "🔥", "💬", "🗂️", "📌", "🎨", "🔬",
-];
-
-export const NOTEBOOK_ICONS = [
-  "📝", "📓", "📚", "🗒️", "🚀", "💼", "🎓", "🧪",
-  "🎨", "🌱", "🗺️", "🔧", "🍜", "🎬", "🏠", "🌍",
-];
+export { NOTEBOOK_ICON_IDS, PAGE_ICON_IDS } from "./icons";
 
 /**
  * Picks a title out of pasted text: the first heading if there is one,

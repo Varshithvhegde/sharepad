@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireContentAccess } from "@/lib/api-auth";
 import { generatePageSlug, isValidSlug } from "@/lib/slug";
+import { DEFAULT_PAGE_ICON } from "@/lib/icons";
 import type { CreatePageInput } from "@/lib/types";
 
 const MAX_PAGES = 200;
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
         slug,
         title,
         content: body.content || "",
-        icon: body.icon || "📄",
+        icon: body.icon || DEFAULT_PAGE_ICON,
         sort_order: sortOrder,
       })
       .select("*")

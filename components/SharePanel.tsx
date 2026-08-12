@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, Download, ExternalLink, X } from "lucide-react";
 import { expiryLabel } from "@/lib/expiry";
 import { track } from "@/lib/analytics";
+import { ItemIcon } from "@/lib/icons";
 import type { Notebook } from "@/lib/types";
 
 interface SharePanelProps {
@@ -75,8 +76,12 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
                 <h2 className="text-[1.5rem] leading-tight" style={{ fontFamily: "var(--font-sketch), serif" }}>
                   Share this notebook
                 </h2>
-                <p className="text-[0.85rem]" style={{ color: "var(--ink-2)" }}>
-                  {notebook.emoji} {notebook.title} · {expiryLabel(notebook.expires_at)}
+                <p
+                  className="text-[0.85rem] flex items-center gap-1.5"
+                  style={{ color: "var(--ink-2)" }}
+                >
+                  <ItemIcon name={notebook.emoji} size={14} className="shrink-0" />
+                  {notebook.title} · {expiryLabel(notebook.expires_at)}
                 </p>
               </div>
               <button onClick={onClose} className="btn-ghost !px-1.5 shrink-0" aria-label="Close">

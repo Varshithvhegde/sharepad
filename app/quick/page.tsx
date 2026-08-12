@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Check, Copy, Loader2, Settings2 } from "lucide-r
 import { saveNotebook } from "@/lib/local-storage";
 import { deriveTitle } from "@/lib/templates";
 import { DEFAULT_EXPIRY_DAYS } from "@/lib/expiry";
+import { DEFAULT_PAGE_ICON } from "@/lib/icons";
 import { track } from "@/lib/analytics";
 
 export default function QuickSharePage() {
@@ -35,7 +36,7 @@ export default function QuickSharePage() {
           font: "hand",
           allowPublicEdit: openEdit,
           expiresInDays: DEFAULT_EXPIRY_DAYS,
-          pages: [{ title, icon: "📄", content: text }],
+          pages: [{ title, icon: DEFAULT_PAGE_ICON, content: text }],
         }),
       });
       const data = await res.json();

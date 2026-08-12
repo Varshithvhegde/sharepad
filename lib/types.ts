@@ -7,6 +7,10 @@ export interface Notebook {
   slug: string;
   title: string;
   description: string | null;
+  /**
+   * Icon id from lib/icons. Named `emoji` because that is what the column held
+   * before icons replaced them, and notebooks made back then still store one.
+   */
   emoji: string;
   theme: PaperTexture;
   font: NotebookFont;

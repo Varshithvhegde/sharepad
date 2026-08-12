@@ -19,8 +19,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .eq("notebook_id", notebook.id)
     .order("sort_order");
 
+  // The icon is a stored identifier, so it is left out of the exported text.
   const md = pages
-    ?.map((p) => `# ${p.icon} ${p.title}\n\n${p.content}\n\n---\n`)
+    ?.map((p) => `# ${p.title}\n\n${p.content}\n\n---\n`)
     .join("\n");
 
   return new NextResponse(`# ${notebook.title}\n\n${md}`, {

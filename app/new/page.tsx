@@ -14,7 +14,12 @@ import {
 } from "lucide-react";
 import { saveNotebook } from "@/lib/local-storage";
 import { slugify } from "@/lib/slug";
-import { NOTEBOOK_ICONS } from "@/lib/templates";
+import {
+  DEFAULT_NOTEBOOK_ICON,
+  ItemIcon,
+  NOTEBOOK_ICON_IDS,
+  iconLabel,
+} from "@/lib/icons";
 import { DEFAULT_EXPIRY_DAYS, EXPIRY_OPTIONS } from "@/lib/expiry";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { track } from "@/lib/analytics";
@@ -33,7 +38,7 @@ export default function NewNotebookPage() {
   const router = useRouter();
 
   const [title, setTitle] = useState("");
-  const [icon, setIcon] = useState("📝");
+  const [icon, setIcon] = useState(DEFAULT_NOTEBOOK_ICON);
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [expiryDays, setExpiryDays] = useState<number | null>(DEFAULT_EXPIRY_DAYS);
@@ -270,20 +275,22 @@ export default function NewNotebookPage() {
                 />
               </div>
               <div className="flex flex-wrap gap-1.5 mb-7">
-                {NOTEBOOK_ICONS.map((emoji) => (
+                {NOTEBOOK_ICON_IDS.map((id) => (
                   <button
-                    key={emoji}
+                    key={id}
                     type="button"
-                    onClick={() => setIcon(emoji)}
-                    aria-pressed={icon === emoji}
-                    className="w-9 h-9 text-[1.05rem] transition-transform"
+                    onClick={() => setIcon(id)}
+                    aria-pressed={icon === id}
+                    aria-label={iconLabel(id)}
+                    title={iconLabel(id)}
+                    className="w-9 h-9 flex items-center justify-center transition-transform"
                     style={{
-                      border: icon === emoji ? "1.8px solid var(--ink)" : "1.5px solid transparent",
-                      background: icon === emoji ? "var(--sticky-y)" : "transparent",
-                      boxShadow: icon === emoji ? "2px 2px 0 rgba(28,28,28,0.18)" : "none",
+                      border: icon === id ? "1.8px solid var(--ink)" : "1.5px solid transparent",
+                      background: icon === id ? "var(--sticky-y)" : "transparent",
+                      boxShadow: icon === id ? "2px 2px 0 rgba(28,28,28,0.18)" : "none",
                     }}
                   >
-                    {emoji}
+                    <ItemIcon name={id} size={17} />
                   </button>
                 ))}
               </div>

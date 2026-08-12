@@ -47,7 +47,8 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Tooltip from "@/components/ui/Tooltip";
 import { sortPages } from "@/lib/notebooks";
 import { saveNotebook, useStoredFlag } from "@/lib/local-storage";
-import { PAGE_TEMPLATES, PAGE_ICONS } from "@/lib/templates";
+import { PAGE_TEMPLATES } from "@/lib/templates";
+import { ItemIcon, PAGE_ICON_IDS, iconLabel } from "@/lib/icons";
 import { expiryLabel, expiringSoon } from "@/lib/expiry";
 import { useIsNarrow } from "@/lib/use-media-query";
 import { fontClass } from "@/lib/fonts";
@@ -459,7 +460,7 @@ export default function NotebookEditor({
         <span className="hidden sm:block h-5 w-px shrink-0" style={{ background: "rgba(28,28,28,0.18)" }} />
 
         <div className="flex-1 min-w-0 flex items-center gap-2">
-          <span className="text-[1.1rem] shrink-0">{notebook.emoji}</span>
+          <ItemIcon name={notebook.emoji} size={18} className="shrink-0" />
           {isEdit ? (
             <input
               value={notebook.title}
@@ -700,7 +701,7 @@ export default function NotebookEditor({
                         onClick={() => selectPage(page)}
                         className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-[0.92rem]"
                       >
-                        <span className="shrink-0">{page.icon}</span>
+                        <ItemIcon name={page.icon} size={14} className="shrink-0" />
                         <span className="truncate flex-1">{page.title}</span>
                         {page.pinned && <Pin size={11} style={{ color: "var(--red)" }} />}
                       </button>
@@ -755,7 +756,7 @@ export default function NotebookEditor({
                             onClick={() => addPage(t.id)}
                             className="w-full text-left px-3 py-2 text-[0.9rem] hover:bg-[var(--paper-2)] flex items-center gap-2"
                           >
-                            <span>{t.icon}</span> {t.name}
+                            <ItemIcon name={t.icon} size={14} /> {t.name}
                           </button>
                         ))}
                       </div>
@@ -777,29 +778,43 @@ export default function NotebookEditor({
         {/* ── Page ── */}
         <main className="flex-1 flex flex-col overflow-hidden min-w-0">
           <div
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 shrink-0 no-print overflow-x-auto"
+            // No overflow here: a non-visible overflow-x forces overflow-y to
+            // auto, which clips the icon menu that opens below this row.
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 shrink-0 no-print"
             style={{ borderBottom: "1.5px solid rgba(28,28,28,0.12)" }}
           >
             {isEdit && activePage && (
               <div className="relative shrink-0">
-                <button onClick={() => setIconMenu((v) => !v)} className="btn-ghost !px-1.5 text-[1.1rem]" title="Change icon">
-                  {activePage.icon}
+                <button
+                  onClick={() => setIconMenu((v) => !v)}
+                  className="btn-ghost !px-1.5"
+                  aria-label="Change page icon"
+                  aria-expanded={iconMenu}
+                >
+                  <ItemIcon name={activePage.icon} size={17} />
                 </button>
                 {iconMenu && (
-                  <div className="absolute top-full left-0 mt-1 z-20">
+                  <div className="absolute top-full left-0 mt-1 z-30">
                     <div className="sk" style={{ background: "#fff" }}>
                       <div className="sk-b" />
-                      <div className="sk-i grid grid-cols-8 gap-0.5 p-2 w-64">
-                        {PAGE_ICONS.map((ic) => (
+                      <div className="sk-i grid grid-cols-8 gap-0.5 p-2 w-[17rem]">
+                        {PAGE_ICON_IDS.map((id) => (
                           <button
-                            key={ic}
+                            key={id}
                             onClick={async () => {
-                              await savePage(activePage.id, { icon: ic });
+                              await savePage(activePage.id, { icon: id });
                               setIconMenu(false);
                             }}
-                            className="p-1.5 text-[1.05rem] hover:bg-[var(--paper-2)]"
+                            aria-label={iconLabel(id)}
+                            title={iconLabel(id)}
+                            className="p-2 flex items-center justify-center hover:bg-[var(--paper-2)]"
+                            style={
+                              activePage.icon === id
+                                ? { background: "var(--sticky-y)" }
+                                : undefined
+                            }
                           >
-                            {ic}
+                            <ItemIcon name={id} size={16} />
                           </button>
                         ))}
                       </div>
@@ -819,8 +834,12 @@ export default function NotebookEditor({
                 style={{ fontFamily: "var(--font-sketch), serif" }}
               />
             ) : (
-              <h1 className="flex-1 truncate text-[1.3rem]" style={{ fontFamily: "var(--font-sketch), serif" }}>
-                {activePage?.icon} {activePage?.title}
+              <h1
+                className="flex-1 truncate text-[1.3rem] flex items-center gap-2"
+                style={{ fontFamily: "var(--font-sketch), serif" }}
+              >
+                <ItemIcon name={activePage?.icon} size={17} className="shrink-0" />
+                <span className="truncate">{activePage?.title}</span>
               </h1>
             )}
 

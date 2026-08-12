@@ -5,6 +5,7 @@ import { generateSlug, generatePageSlug, isValidSlug, RESERVED_SLUGS } from "@/l
 import { stripSensitiveNotebook } from "@/lib/notebooks";
 import { DEFAULT_EXPIRY_DAYS } from "@/lib/expiry";
 import { WELCOME_PAGE } from "@/lib/templates";
+import { DEFAULT_NOTEBOOK_ICON, DEFAULT_PAGE_ICON } from "@/lib/icons";
 import type { CreateNotebookInput } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
         slug,
         title,
         description: body.description?.trim() || null,
-        emoji: body.emoji || "📝",
+        emoji: body.emoji || DEFAULT_NOTEBOOK_ICON,
         theme: body.theme || "plain",
         font: body.font || "hand",
         allow_public_edit: body.allowPublicEdit ?? false,
@@ -80,14 +81,14 @@ export async function POST(req: NextRequest) {
 
     const pages = body.pages?.length
       ? body.pages
-      : [{ title: "First page", icon: "👋", content: WELCOME_PAGE(title) }];
+      : [{ title: "First page", icon: DEFAULT_PAGE_ICON, content: WELCOME_PAGE(title) }];
 
     await admin.from("pages").insert(
       pages.map((p, i) => ({
         notebook_id: notebook.id,
         slug: generatePageSlug(p.title) + (i > 0 ? `-${i}` : ""),
         title: p.title,
-        icon: p.icon || "📄",
+        icon: p.icon || DEFAULT_PAGE_ICON,
         content: p.content || "",
         sort_order: i,
       }))

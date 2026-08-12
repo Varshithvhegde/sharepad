@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const admin = createAdminClient();
     const { data } = await admin
       .from("notebooks")
-      .select("title, description, emoji, visibility")
+      .select("title, description, visibility")
       .eq("slug", slug)
       .single();
 
@@ -44,13 +44,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const indexable = data.visibility === "public";
 
     return {
-      title: `${data.emoji} ${data.title}`,
+      title: data.title,
       description,
       alternates: { canonical: `/n/${slug}` },
       robots: { index: indexable, follow: indexable },
       openGraph: {
         type: "article",
-        title: `${data.emoji} ${data.title}`,
+        title: data.title,
         description,
         url: `${SITE_URL}/n/${slug}`,
       },
