@@ -39,7 +39,7 @@ import MarkdownPreview from "@/components/MarkdownPreview";
 import TableOfContents from "@/components/TableOfContents";
 import SharePanel from "@/components/SharePanel";
 import SettingsPanel from "@/components/SettingsPanel";
-import MarkdownToolbar, { insertMarkdown } from "@/components/editor/MarkdownToolbar";
+import MarkdownToolbar from "@/components/editor/MarkdownToolbar";
 import CommentsPanel from "@/components/editor/CommentsPanel";
 import VersionHistory from "@/components/editor/VersionHistory";
 import FormattingHelp from "@/components/editor/FormattingHelp";
@@ -55,7 +55,7 @@ import { useIsNarrow } from "@/lib/use-media-query";
 import { fontClass } from "@/lib/fonts";
 import { formatDate } from "@/lib/format";
 import { buildAnchors, mapScroll, type Anchor } from "@/lib/scroll-sync";
-import { useTabIndent } from "@/lib/use-tab-indent";
+import { useTextareaEditing } from "@/lib/use-textarea-editing";
 import { track } from "@/lib/analytics";
 import type { Notebook, Page } from "@/lib/types";
 
@@ -259,27 +259,9 @@ export default function NotebookEditor({
     };
   }, [content, title, activePageId, activePage, isEdit, savePage]);
 
-  const handleEditorKeys = useTabIndent(textareaRef, setContent);
-
-  const applyFormat = useCallback(
-    (before: string, after = "", placeholder = "") => {
-      const ta = textareaRef.current;
-      if (!ta) return;
-      const { updated, cursorStart, cursorEnd } = insertMarkdown(
-        content,
-        ta.selectionStart,
-        ta.selectionEnd,
-        before,
-        after,
-        placeholder
-      );
-      setContent(updated);
-      requestAnimationFrame(() => {
-        ta.focus();
-        ta.setSelectionRange(cursorStart, cursorEnd);
-      });
-    },
-    [content]
+  const { applyFormat, handleKeyDown: handleEditorKeys } = useTextareaEditing(
+    textareaRef,
+    setContent
   );
 
   useEffect(() => {

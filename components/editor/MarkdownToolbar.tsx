@@ -74,22 +74,3 @@ export default function MarkdownToolbar({ onInsert, onShowHelp }: MarkdownToolba
   );
 }
 
-/** Wraps or prefixes the current selection, returning the new value and caret position. */
-export function insertMarkdown(
-  content: string,
-  selectionStart: number,
-  selectionEnd: number,
-  before: string,
-  after = "",
-  placeholder = ""
-) {
-  const selected = content.slice(selectionStart, selectionEnd) || placeholder;
-  const updated =
-    content.slice(0, selectionStart) + before + selected + after + content.slice(selectionEnd);
-
-  return {
-    updated,
-    cursorStart: selectionStart + before.length,
-    cursorEnd: selectionStart + before.length + selected.length,
-  };
-}

@@ -4,28 +4,26 @@ import { useCallback, useRef, type KeyboardEvent, type RefObject } from "react";
 import { INDENT, indentBlock, lineRange, outdentBlock } from "./editor-indent";
 
 /**
- * Makes Tab indent inside a textarea rather than moving focus, which is what
- * anyone nesting a Markdown list expects.
+ * Editing helpers for the Markdown textareas.
  *
- * Pressing Escape first restores normal behaviour for one keystroke, so a
- * keyboard user is never stuck in the box — capturing Tab without that would
- * make the textarea the one control they cannot leave.
+ * Everything that changes the text goes through `replaceRange`, which matters
+ * more than it looks: rebuilding the document and assigning it to React state
+ * replaces the textarea's whole value and throws away the browser's undo
+ * history, so Ctrl+Z would work after typing but do nothing after a toolbar
+ * button. Editing through execCommand keeps one continuous undo stack across
+ * typing, toolbar buttons and Tab alike.
  *
- * `onFallbackChange` is only used if execCommand is unavailable; see below.
+ * execCommand is deprecated but is still the only undoable way to edit a
+ * textarea. It fires the input event, so React's state follows normally, and
+ * because the state then matches the DOM there is no re-render to disturb the
+ * selection.
  */
-export function useTabIndent(
+export function useTextareaEditing(
   textareaRef: RefObject<HTMLTextAreaElement | null>,
   onFallbackChange: (value: string) => void
 ) {
   const tabEscapes = useRef(false);
 
-  /*
-   * Edits through execCommand so the browser's undo stack survives. Assigning
-   * to textarea.value would discard it, and a single Cmd+Z after Tab would then
-   * throw away everything typed beforehand as well. It is deprecated but still
-   * the only undoable way to edit a textarea, and it fires the input event that
-   * keeps React's state in step.
-   */
   const replaceRange = useCallback(
     (from: number, to: number, text: string) => {
       const textarea = textareaRef.current;
@@ -35,6 +33,7 @@ export function useTabIndent(
       textarea.setSelectionRange(from, to);
 
       if (!document.execCommand("insertText", false, text)) {
+        // Undo history is lost on this path, but the edit still lands.
         const next = textarea.value.slice(0, from) + text + textarea.value.slice(to);
         onFallbackChange(next);
         requestAnimationFrame(() => {
@@ -45,7 +44,34 @@ export function useTabIndent(
     [textareaRef, onFallbackChange]
   );
 
-  return useCallback(
+  /**
+   * Wraps or prefixes the selection, then leaves the inner text selected so the
+   * placeholder can be typed straight over.
+   */
+  const applyFormat = useCallback(
+    (before: string, after = "", placeholder = "") => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const { selectionStart, selectionEnd, value } = textarea;
+      const selected = value.slice(selectionStart, selectionEnd) || placeholder;
+
+      replaceRange(selectionStart, selectionEnd, before + selected + after);
+
+      const innerStart = selectionStart + before.length;
+      requestAnimationFrame(() => {
+        textarea.setSelectionRange(innerStart, innerStart + selected.length);
+      });
+    },
+    [textareaRef, replaceRange]
+  );
+
+  /**
+   * Tab indents rather than leaving the box, which is what anyone nesting a
+   * list expects. Pressing Escape first restores normal behaviour for one
+   * keystroke, so a keyboard user is never stuck here.
+   */
+  const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Escape") {
         tabEscapes.current = true;
@@ -68,7 +94,6 @@ export function useTabIndent(
 
       e.preventDefault();
 
-      // A plain Tab with nothing selected just inserts an indent.
       if (!e.shiftKey && !spansLines) {
         replaceRange(selectionStart, selectionEnd, INDENT);
         return;
@@ -88,4 +113,6 @@ export function useTabIndent(
     },
     [replaceRange]
   );
+
+  return { replaceRange, applyFormat, handleKeyDown };
 }
