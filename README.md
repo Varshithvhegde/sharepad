@@ -46,6 +46,19 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000   # https://sharepad.in in production
 `NEXT_PUBLIC_SITE_URL` feeds canonical URLs, the sitemap, `llms.txt` and the
 links shown in the share panel, so it has to be the real origin once deployed.
 
+## HTML inside markdown
+
+Raw HTML is rendered — `<details>`, `<kbd>`, `<sub>`, `<mark>`, `<abbr>`,
+alignment and the rest — and then sanitised against GitHub's schema before it
+reaches the page.
+
+Sanitising is not optional. A notebook with open editing can be written to by
+anyone holding the link, and a single injected script would run on the owner's
+own page, where it could read the edit token out of the URL or lift every token
+this browser has saved from `localStorage`. Scripts, styles, iframes, objects,
+forms, event-handler attributes and `javascript:` URLs are all removed. The
+allowed set lives in `lib/markdown-schema.ts`.
+
 ## How expiry works
 
 Choosing a lifetime stores an absolute timestamp, not a countdown. The moment it

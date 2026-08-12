@@ -2,10 +2,14 @@
 
 import { memo } from "react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { PluggableList } from "unified";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
 import { headingId } from "@/lib/notebooks";
+import { markdownSchema } from "@/lib/markdown-schema";
 
 function toText(children: ReactNode): string {
   if (typeof children === "string" || typeof children === "number") return String(children);
@@ -40,7 +44,18 @@ const COMPONENTS = {
 };
 
 const REMARK = [remarkGfm];
-const REHYPE = [rehypeHighlight];
+
+/*
+ * Order matters. Raw HTML is parsed into the tree first, then everything
+ * dangerous is stripped, and only then is highlighting applied — so the classes
+ * the highlighter adds are not themselves subject to sanitising, and no
+ * unsanitised node ever reaches the output.
+ */
+const REHYPE: PluggableList = [
+  rehypeRaw,
+  [rehypeSanitize, markdownSchema],
+  rehypeHighlight,
+];
 
 function MarkdownPreview({
   content,
