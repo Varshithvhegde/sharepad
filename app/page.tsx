@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, KeyRound, Trash2 } from "lucide-react";
+import { ArrowRight, Trash2 } from "lucide-react";
 import { getSavedNotebooks, removeSavedNotebook } from "@/lib/local-storage";
+import SiteHeader from "@/components/marketing/SiteHeader";
+import SiteFooter from "@/components/marketing/SiteFooter";
+import SupportSection from "@/components/marketing/SupportSection";
 import type { SavedNotebook } from "@/lib/types";
 
 const TAB_COLORS = ["sn-y", "sn-b", "sn-p", "sn-g"];
@@ -76,37 +79,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen paper-dot">
-      {/* ── Nav ── */}
-      <nav
-        className="sticky top-0 z-50"
-        style={{
-          borderBottom: "1.5px solid rgba(28,28,28,0.14)",
-          background: "rgba(250,249,246,0.93)",
-          backdropFilter: "blur(6px)",
-        }}
-      >
-        <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
-          <span className="flex items-center gap-2.5">
-            <NotebookMark />
-            <span
-              className="text-[1.35rem] leading-none"
-              style={{ fontFamily: "var(--font-sketch), serif" }}
-            >
-              SharePad
-            </span>
-          </span>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link href="/recover" className="btn-ghost text-[0.9rem]">
-              <KeyRound size={14} />
-              <span className="hidden sm:inline">I have an edit link</span>
-              <span className="sm:hidden">Edit link</span>
-            </Link>
-            <Link href="/new" className="btn btn-y text-[0.95rem] !py-2 !px-4">
-              Start writing
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* ── Hero ── */}
       <section id="main" className="max-w-5xl mx-auto px-5 pt-14 pb-10 sm:pt-20">
@@ -348,23 +321,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer
-        className="py-10 px-5 text-center text-[0.85rem]"
-        style={{ borderTop: "1.5px solid rgba(28,28,28,0.12)", color: "var(--ink-3)" }}
-      >
-        Made by{" "}
-        <a
-          href="https://github.com/Varshithvhegde"
-          className="underline"
-          style={{ color: "var(--red)" }}
-        >
-          Varshith
-        </a>{" "}
-        ·{" "}
-        <a href="https://github.com/Varshithvhegde/sharepad" className="underline">
-          Source on GitHub
-        </a>
-      </footer>
+      <SupportSection />
+
+      <SiteFooter />
     </div>
   );
 }
@@ -384,28 +343,6 @@ function PinnedTag() {
         </span>
       </p>
     </div>
-  );
-}
-
-function NotebookMark() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden>
-      <rect
-        x="4.5"
-        y="2.5"
-        width="18"
-        height="21"
-        fill="#fff"
-        stroke="var(--ink)"
-        strokeWidth="1.8"
-      />
-      <line x1="9" y1="2.5" x2="9" y2="23.5" stroke="var(--red)" strokeWidth="1.4" />
-      <line x1="12" y1="8" x2="19" y2="8" stroke="var(--ink)" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="12" y1="12" x2="19" y2="12" stroke="var(--ink)" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="12" y1="16" x2="16" y2="16" stroke="var(--ink)" strokeWidth="1.4" strokeLinecap="round" />
-      <rect x="1.5" y="5" width="4" height="2.6" fill="var(--sticky-y)" stroke="var(--ink)" strokeWidth="1.2" />
-      <rect x="1.5" y="11" width="4" height="2.6" fill="var(--sticky-b)" stroke="var(--ink)" strokeWidth="1.2" />
-    </svg>
   );
 }
 
