@@ -114,5 +114,32 @@ export function useTextareaEditing(
     [replaceRange]
   );
 
-  return { replaceRange, applyFormat, handleKeyDown };
+  /** Drops text in at the caret. */
+  const insertAtCaret = useCallback(
+    (text: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      replaceRange(textarea.selectionStart, textarea.selectionEnd, text);
+    },
+    [textareaRef, replaceRange]
+  );
+
+  /**
+   * Swaps the first occurrence of some exact text, used to turn an upload
+   * placeholder into its finished link wherever the writer has since moved to.
+   */
+  const replaceText = useCallback(
+    (find: string, replaceWith: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const at = textarea.value.indexOf(find);
+      if (at === -1) return; // already edited away; leave the text alone
+
+      replaceRange(at, at + find.length, replaceWith);
+    },
+    [textareaRef, replaceRange]
+  );
+
+  return { replaceRange, applyFormat, handleKeyDown, insertAtCaret, replaceText };
 }

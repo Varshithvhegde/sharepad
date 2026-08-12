@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireEditAccess } from "@/lib/api-auth";
 import { hashPassword } from "@/lib/crypto";
 import { stripSensitiveNotebook } from "@/lib/notebooks";
+import { deleteObjects } from "@/lib/r2";
 import type { UpdateNotebookInput } from "@/lib/types";
 
 type Params = { params: Promise<{ id: string }> };
@@ -79,9 +80,21 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const admin = createAdminClient();
+
+  // Read the keys first: deleting the notebook cascades the rows away, and
+  // without them nothing would know which objects to remove from storage.
+  const { data: images } = await admin
+    .from("images")
+    .select("object_key")
+    .eq("notebook_id", id);
+
   const { error } = await admin.from("notebooks").delete().eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (images?.length) {
+    await deleteObjects(images.map((i) => i.object_key as string));
   }
 
   return NextResponse.json({ ok: true });

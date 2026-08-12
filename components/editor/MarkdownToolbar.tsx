@@ -7,6 +7,8 @@ import {
   Code,
   Heading1,
   Heading2,
+  ImagePlus,
+  Loader2,
   Italic,
   Link as LinkIcon,
   List,
@@ -19,6 +21,8 @@ import {
 interface MarkdownToolbarProps {
   onInsert: (before: string, after?: string, placeholder?: string) => void;
   onShowHelp: () => void;
+  onPickImage: () => void;
+  uploading: boolean;
 }
 
 const TOOLS = [
@@ -36,7 +40,12 @@ const TOOLS = [
   { Icon: Minus, title: "Divider", args: ["\n\n---\n\n", ""] },
 ] as const;
 
-export default function MarkdownToolbar({ onInsert, onShowHelp }: MarkdownToolbarProps) {
+export default function MarkdownToolbar({
+  onInsert,
+  onShowHelp,
+  onPickImage,
+  uploading,
+}: MarkdownToolbarProps) {
   return (
     <div
       className="flex items-center gap-0.5 px-2 py-1.5 shrink-0"
@@ -59,6 +68,17 @@ export default function MarkdownToolbar({ onInsert, onShowHelp }: MarkdownToolba
           </button>
         ))}
       </div>
+
+      <button
+        type="button"
+        onClick={onPickImage}
+        disabled={uploading}
+        title={uploading ? "Uploading…" : "Add an image, or just paste one"}
+        aria-label="Add an image"
+        className="btn-ghost !px-2 !py-1.5 shrink-0"
+      >
+        {uploading ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />}
+      </button>
 
       {/* Nothing else advertises that tables, checklists or details blocks exist. */}
       <button

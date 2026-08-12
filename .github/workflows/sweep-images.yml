@@ -1,0 +1,43 @@
+name: Sweep orphaned images
+
+# Deleting a notebook through the app clears its images as it goes, but the
+# nightly expiry job works straight in the database, so those images would sit
+# in the bucket for ever. This clears them out weekly.
+#
+# Needs a repository secret IMAGE_SWEEP_SECRET matching the server's, and
+# optionally a SITE_URL variable to target somewhere other than production.
+
+on:
+  schedule:
+    - cron: "45 4 * * 0"
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Remove images with no notebook
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://sharepad.in' }}
+          SWEEP_SECRET: ${{ secrets.IMAGE_SWEEP_SECRET }}
+        run: |
+          if [ -z "$SWEEP_SECRET" ]; then
+            echo "IMAGE_SWEEP_SECRET is not set — skipping."
+            exit 0
+          fi
+
+          RESPONSE=$(curl -sS -m 120 -w '\n%{http_code}' -X POST \
+            -H "Authorization: Bearer $SWEEP_SECRET" \
+            "${SITE_URL%/}/api/images/sweep")
+
+          STATUS=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "$BODY"
+
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Sweep failed with status $STATUS"
+            exit 1
+          fi

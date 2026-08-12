@@ -46,6 +46,28 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000   # https://sharepad.in in production
 `NEXT_PUBLIC_SITE_URL` feeds canonical URLs, the sitemap, `llms.txt` and the
 links shown in the share panel, so it has to be the real origin once deployed.
 
+## Images
+
+Paste a screenshot straight into the editor, drop a file on it, or use the
+toolbar button. Uploads go to Cloudflare R2, which charges nothing for egress —
+the cost that matters when a shared notebook is opened repeatedly.
+
+Pictures are resized to 1600px and re-encoded as WebP **in the browser** before
+upload, which usually cuts a phone screenshot by an order of magnitude. Animated
+GIFs are passed through untouched, since drawing one to a canvas would keep the
+first frame and throw the animation away.
+
+The server decides the format from the file's own leading bytes rather than the
+declared type, which is chosen by the uploader and proves nothing. Limits are
+5 MB per image, 50 per notebook, and 20 uploads per address every ten minutes,
+counted inside Postgres so two simultaneous requests cannot both slip through.
+
+Deleting a notebook removes its images as it goes. The nightly expiry job works
+straight in the database, so a weekly workflow sweeps the bucket for images
+whose notebook no longer exists.
+
+Upload stays switched off unless all five `R2_*` variables are set.
+
 ## HTML inside markdown
 
 Raw HTML is rendered — `<details>`, `<kbd>`, `<sub>`, `<mark>`, `<abbr>`,

@@ -56,6 +56,8 @@ import { fontClass } from "@/lib/fonts";
 import { formatDate } from "@/lib/format";
 import { buildAnchors, mapScroll, type Anchor } from "@/lib/scroll-sync";
 import { useTextareaEditing } from "@/lib/use-textarea-editing";
+import { useImageUpload } from "@/lib/use-image-upload";
+import { ALLOWED_IMAGE_TYPES } from "@/lib/images";
 import { track } from "@/lib/analytics";
 import type { Notebook, Page } from "@/lib/types";
 
@@ -113,6 +115,7 @@ export default function NotebookEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   // Which pane started the current scroll, so the echo back doesn't fight it.
   const scrollLead = useRef<"editor" | "preview" | null>(null);
   const scrollRelease = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -259,9 +262,37 @@ export default function NotebookEditor({
     };
   }, [content, title, activePageId, activePage, isEdit, savePage]);
 
-  const { applyFormat, handleKeyDown: handleEditorKeys } = useTextareaEditing(
-    textareaRef,
-    setContent
+  const {
+    applyFormat,
+    handleKeyDown: handleEditorKeys,
+    insertAtCaret,
+    replaceText,
+  } = useTextareaEditing(textareaRef, setContent);
+
+  const { uploadMany, uploading } = useImageUpload({
+    notebookId: notebook.id,
+    authHeaders,
+    insert: insertAtCaret,
+    replaceText,
+    onError: (message) => toast(message, "error"),
+  });
+
+  /** Paste and drop both carry files the same way. */
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      if (!e.clipboardData?.files.length) return;
+      // Only swallow the paste if we actually took an image from it.
+      if (uploadMany(e.clipboardData.files) > 0) e.preventDefault();
+    },
+    [uploadMany]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLTextAreaElement>) => {
+      if (!e.dataTransfer?.files.length) return;
+      if (uploadMany(e.dataTransfer.files) > 0) e.preventDefault();
+    },
+    [uploadMany]
   );
 
   useEffect(() => {
@@ -910,13 +941,30 @@ export default function NotebookEditor({
             onChange={importMarkdown}
           />
 
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept={ALLOWED_IMAGE_TYPES.join(",")}
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.length) uploadMany(e.target.files);
+              e.target.value = "";
+            }}
+          />
+
           <div className="flex flex-1 overflow-hidden">
             {isEdit && (activeMode === "write" || activeMode === "split") && (
               <div
                 className={`flex flex-col overflow-hidden ${activeMode === "split" ? "w-1/2" : "w-full"}`}
                 style={activeMode === "split" ? { borderRight: "1.5px solid rgba(28,28,28,0.12)" } : undefined}
               >
-                <MarkdownToolbar onInsert={applyFormat} onShowHelp={() => setHelpOpen(true)} />
+                <MarkdownToolbar
+                  onInsert={applyFormat}
+                  onShowHelp={() => setHelpOpen(true)}
+                  onPickImage={() => imageInputRef.current?.click()}
+                  uploading={uploading > 0}
+                />
                 <textarea
                   ref={textareaRef}
                   value={content}
@@ -925,6 +973,8 @@ export default function NotebookEditor({
                   aria-label="Markdown source"
                   spellCheck
                   onKeyDown={handleEditorKeys}
+                  onPaste={handlePaste}
+                  onDrop={handleDrop}
                   onScroll={() => mirrorScroll("editor")}
                   className={`flex-1 w-full p-5 resize-none outline-none text-[0.92rem] leading-[1.8] ${paperClass}`}
                   style={{ fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace" }}
