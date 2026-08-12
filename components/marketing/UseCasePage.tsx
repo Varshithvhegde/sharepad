@@ -35,7 +35,7 @@ export default function UseCasePage({ useCase }: { useCase: UseCase }) {
   };
 
   return (
-    <div className="min-h-dvh paper-dot">
+    <div className="min-h-dvh paper-dot overflow-x-hidden">
       <SiteHeader />
 
       <main id="main" className="max-w-3xl mx-auto px-5 py-14">

@@ -228,7 +228,7 @@ export default function NewNotebookPage() {
 
   /* ── Form ── */
   return (
-    <div className="min-h-screen paper-dot px-5 py-10">
+    <div className="min-h-screen paper-dot overflow-x-hidden px-5 py-10">
       <div className="max-w-xl mx-auto">
         <Link href="/" className="btn-ghost !px-0 mb-7 text-[0.92rem]">
           <ArrowLeft size={14} /> Back

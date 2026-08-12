@@ -6,6 +6,7 @@ import { removeSavedNotebook, useSavedNotebooks } from "@/lib/local-storage";
 import SiteHeader from "@/components/marketing/SiteHeader";
 import SiteFooter from "@/components/marketing/SiteFooter";
 import SupportSection from "@/components/marketing/SupportSection";
+import FaqSection from "@/components/marketing/FaqSection";
 
 const TAB_COLORS = ["sn-y", "sn-b", "sn-p", "sn-g"];
 
@@ -72,7 +73,9 @@ export default function HomePage() {
   const saved = useSavedNotebooks();
 
   return (
-    <div className="min-h-screen paper-dot">
+    // Tape strips and tilted cards overhang their boxes by a few pixels, which
+    // is enough to give a phone a horizontal scrollbar.
+    <div className="min-h-screen paper-dot overflow-x-hidden">
       <SiteHeader />
 
       {/* ── Hero ── */}
@@ -311,6 +314,8 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      <FaqSection />
 
       <SupportSection />
 

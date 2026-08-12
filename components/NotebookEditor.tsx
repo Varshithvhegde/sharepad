@@ -49,6 +49,7 @@ import { sortPages } from "@/lib/notebooks";
 import { saveNotebook, useStoredFlag } from "@/lib/local-storage";
 import { PAGE_TEMPLATES, PAGE_ICONS } from "@/lib/templates";
 import { expiryLabel, expiringSoon } from "@/lib/expiry";
+import { useIsNarrow } from "@/lib/use-media-query";
 import { fontClass } from "@/lib/fonts";
 import { formatDate } from "@/lib/format";
 import { buildAnchors, mapScroll, type Anchor } from "@/lib/scroll-sync";
@@ -125,6 +126,14 @@ export default function NotebookEditor({
   const isOwner = mode === "edit";
   // Visitors can edit too when the owner has opened the notebook up.
   const isEdit = (isOwner || notebook.allow_public_edit) && !notebook.read_only;
+
+  /*
+   * Two panes side by side need room there isn't on a phone, so split collapses
+   * to writing. The stored preference is left alone, so turning a tablet back to
+   * landscape restores the split without the reader having to ask for it again.
+   */
+  const isNarrow = useIsNarrow();
+  const activeMode: ViewMode = isNarrow && viewMode === "split" ? "write" : viewMode;
   const activePage = pages.find((p) => p.id === activePageId);
   const stats = readingStats(isEdit ? content : activePage?.content ?? "");
   const paperClass = TEXTURE_CLASS[notebook.theme] ?? "paper-plain";
@@ -169,7 +178,7 @@ export default function NotebookEditor({
 
   const mirrorScroll = useCallback(
     (from: "editor" | "preview") => {
-      if (!syncScroll || viewMode !== "split") return;
+      if (!syncScroll || activeMode !== "split") return;
       // Ignore the scroll event our own mirroring just caused.
       if (scrollLead.current && scrollLead.current !== from) return;
 
@@ -204,7 +213,7 @@ export default function NotebookEditor({
         scrollLead.current = null;
       }, 120);
     },
-    [syncScroll, viewMode, content]
+    [syncScroll, activeMode, content]
   );
 
   const savePage = useCallback(
@@ -474,25 +483,31 @@ export default function NotebookEditor({
         </div>
 
         {isEdit && (
-          <div className="hidden md:flex items-center shrink-0" style={{ border: "1.5px solid rgba(28,28,28,0.25)" }}>
+          <div className="flex items-center shrink-0" style={{ border: "1.5px solid rgba(28,28,28,0.25)" }}>
             {(
               [
                 { id: "write", label: "Write", Icon: Pencil },
-                { id: "split", label: "Split", Icon: SquareSplitHorizontal },
+                // Split needs two panes' worth of width, so it is offered only
+                // where it can actually be honoured.
+                ...(isNarrow
+                  ? []
+                  : [{ id: "split", label: "Split", Icon: SquareSplitHorizontal } as const]),
                 { id: "read", label: "Read", Icon: Eye },
               ] as const
             ).map(({ id, label, Icon }) => (
               <button
                 key={id}
                 onClick={() => setViewMode(id)}
-                aria-pressed={viewMode === id}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[0.85rem] transition-colors"
+                aria-pressed={activeMode === id}
+                aria-label={label}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[0.85rem] transition-colors"
                 style={{
-                  background: viewMode === id ? "var(--ink)" : "transparent",
-                  color: viewMode === id ? "var(--paper)" : "var(--ink-2)",
+                  background: activeMode === id ? "var(--ink)" : "transparent",
+                  color: activeMode === id ? "var(--paper)" : "var(--ink-2)",
                 }}
               >
-                <Icon size={13} /> {label}
+                <Icon size={13} />
+                <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>
@@ -639,7 +654,7 @@ export default function NotebookEditor({
           )}
 
           <div
-            className="relative flex flex-col h-full w-72 paper-plain"
+            className="relative flex flex-col h-full w-[min(18rem,82vw)] lg:w-72 paper-plain"
             style={{ borderRight: "1.5px solid rgba(28,28,28,0.16)" }}
           >
             <div className="p-3 flex items-center gap-2" style={{ borderBottom: "1.5px solid rgba(28,28,28,0.12)" }}>
@@ -691,8 +706,10 @@ export default function NotebookEditor({
                       </button>
 
                       {isEdit && (
+                        // Touch has no hover, so the page you are on always shows
+                        // its actions; the rest reveal on hover as before.
                         <div
-                          className="hidden group-hover:flex items-center gap-0.5 px-2 pb-1.5"
+                          className={`${active ? "flex" : "hidden"} group-hover:flex items-center gap-0.5 px-2 pb-1.5`}
                           style={{ borderTop: "1px dashed rgba(28,28,28,0.15)", paddingTop: 4 }}
                         >
                           <button onClick={() => movePage(page, -1)} className="btn-ghost !px-1 !py-0.5" title="Move up">
@@ -760,7 +777,7 @@ export default function NotebookEditor({
         {/* ── Page ── */}
         <main className="flex-1 flex flex-col overflow-hidden min-w-0">
           <div
-            className="flex items-center gap-2 px-4 py-2.5 shrink-0 no-print"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 shrink-0 no-print overflow-x-auto"
             style={{ borderBottom: "1.5px solid rgba(28,28,28,0.12)" }}
           >
             {isEdit && activePage && (
@@ -812,7 +829,7 @@ export default function NotebookEditor({
             </span>
 
             <div className="flex items-center gap-0.5 shrink-0">
-              {isEdit && viewMode === "split" && (
+              {isEdit && activeMode === "split" && (
                 <Tooltip label={syncScroll ? "Scrolling is linked" : "Scrolling is independent"}>
                   <button
                     onClick={() => setSyncScroll(!syncScroll)}
@@ -869,7 +886,7 @@ export default function NotebookEditor({
                   href={`/n/${notebook.slug}/print`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-ghost !px-1.5 hidden sm:flex"
+                  className="btn-ghost !px-1.5"
                   aria-label="Print or save as PDF"
                 >
                   <Printer size={14} />
@@ -887,10 +904,10 @@ export default function NotebookEditor({
           />
 
           <div className="flex flex-1 overflow-hidden">
-            {isEdit && (viewMode === "write" || viewMode === "split") && (
+            {isEdit && (activeMode === "write" || activeMode === "split") && (
               <div
-                className={`flex flex-col overflow-hidden ${viewMode === "split" ? "w-1/2" : "w-full"}`}
-                style={viewMode === "split" ? { borderRight: "1.5px solid rgba(28,28,28,0.12)" } : undefined}
+                className={`flex flex-col overflow-hidden ${activeMode === "split" ? "w-1/2" : "w-full"}`}
+                style={activeMode === "split" ? { borderRight: "1.5px solid rgba(28,28,28,0.12)" } : undefined}
               >
                 <MarkdownToolbar onInsert={applyFormat} />
                 <textarea
@@ -907,7 +924,7 @@ export default function NotebookEditor({
               </div>
             )}
 
-            {(!isEdit || viewMode === "split" || viewMode === "read") && (
+            {(!isEdit || activeMode === "split" || activeMode === "read") && (
               <div
                 ref={previewRef}
                 onScroll={() => mirrorScroll("preview")}
