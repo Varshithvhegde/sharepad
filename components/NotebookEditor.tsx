@@ -55,6 +55,7 @@ import { useIsNarrow } from "@/lib/use-media-query";
 import { fontClass } from "@/lib/fonts";
 import { formatDate } from "@/lib/format";
 import { buildAnchors, mapScroll, type Anchor } from "@/lib/scroll-sync";
+import { INDENT, indentBlock, lineRange, outdentBlock } from "@/lib/editor-indent";
 import { track } from "@/lib/analytics";
 import type { Notebook, Page } from "@/lib/types";
 
@@ -116,6 +117,8 @@ export default function NotebookEditor({
   const scrollLead = useRef<"editor" | "preview" | null>(null);
   const scrollRelease = useRef<ReturnType<typeof setTimeout> | null>(null);
   const anchorCache = useRef<{ key: string; anchors: Anchor[] } | null>(null);
+  // Set by Escape, so the next Tab leaves the editor instead of indenting.
+  const tabEscapes = useRef(false);
   const { toasts, show: toast, dismiss } = useToast();
   const { ask, dialog: confirmDialog } = useConfirm();
 
@@ -257,6 +260,81 @@ export default function NotebookEditor({
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [content, title, activePageId, activePage, isEdit, savePage]);
+
+  /*
+   * Replaces a range while leaving the browser's own undo stack intact.
+   * Assigning to textarea.value would wipe it, so Cmd+Z after a Tab would jump
+   * back past everything typed before it. execCommand is deprecated but remains
+   * the only way to edit a textarea undoably, and it fires the input event that
+   * keeps React's state in step.
+   */
+  const replaceRange = useCallback(
+    (from: number, to: number, text: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      textarea.focus();
+      textarea.setSelectionRange(from, to);
+
+      if (!document.execCommand("insertText", false, text)) {
+        const next = textarea.value.slice(0, from) + text + textarea.value.slice(to);
+        setContent(next);
+        requestAnimationFrame(() => {
+          textarea.setSelectionRange(from + text.length, from + text.length);
+        });
+      }
+    },
+    []
+  );
+
+  /**
+   * Tab indents rather than leaving the editor, which is what a Markdown writer
+   * expects when nesting a list. Pressing Escape first restores the normal
+   * behaviour for one keystroke, so a keyboard user is never trapped in the box.
+   */
+  const handleEditorKeys = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Escape") {
+        tabEscapes.current = true;
+        return;
+      }
+
+      if (e.key !== "Tab") {
+        tabEscapes.current = false;
+        return;
+      }
+
+      if (tabEscapes.current) {
+        tabEscapes.current = false;
+        return; // let focus move on, as Tab normally would
+      }
+
+      const textarea = e.currentTarget;
+      const { selectionStart, selectionEnd, value } = textarea;
+      const spansLines = value.slice(selectionStart, selectionEnd).includes("\n");
+
+      e.preventDefault();
+
+      // A plain Tab with nothing selected just inserts an indent.
+      if (!e.shiftKey && !spansLines) {
+        replaceRange(selectionStart, selectionEnd, INDENT);
+        return;
+      }
+
+      const { from, to } = lineRange(value, selectionStart, selectionEnd);
+      const block = value.slice(from, to);
+      const updated = e.shiftKey ? outdentBlock(block) : indentBlock(block);
+      if (updated === block) return;
+
+      replaceRange(from, to, updated);
+
+      // Keep the same lines selected so the shortcut can be repeated.
+      requestAnimationFrame(() => {
+        textarea.setSelectionRange(from, from + updated.length);
+      });
+    },
+    [replaceRange]
+  );
 
   const applyFormat = useCallback(
     (before: string, after = "", placeholder = "") => {
@@ -939,6 +1017,7 @@ export default function NotebookEditor({
                   placeholder="Start writing…"
                   aria-label="Markdown source"
                   spellCheck
+                  onKeyDown={handleEditorKeys}
                   onScroll={() => mirrorScroll("editor")}
                   className={`flex-1 w-full p-5 resize-none outline-none text-[0.92rem] leading-[1.8] ${paperClass}`}
                   style={{ fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace" }}
@@ -1016,6 +1095,9 @@ function ShortcutSheet({ onClose }: { onClose: () => void }) {
     ["⌘B", "Bold"],
     ["⌘I", "Italic"],
     ["⌘/", "Cycle write / split / read"],
+    ["Tab", "Indent, for nesting a list"],
+    ["⇧Tab", "Outdent"],
+    ["Esc Tab", "Leave the editor instead of indenting"],
     ["?", "Open this list"],
     ["Esc", "Close anything open"],
   ];
