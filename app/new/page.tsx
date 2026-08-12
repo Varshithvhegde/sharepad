@@ -17,6 +17,7 @@ import { slugify } from "@/lib/slug";
 import { NOTEBOOK_ICONS } from "@/lib/templates";
 import { DEFAULT_EXPIRY_DAYS, EXPIRY_OPTIONS } from "@/lib/expiry";
 import { FONT_OPTIONS } from "@/lib/fonts";
+import { track } from "@/lib/analytics";
 import type { NotebookFont, PaperTexture } from "@/lib/types";
 
 type SlugState = "idle" | "checking" | "free" | "taken" | "invalid";
@@ -106,6 +107,21 @@ export default function NewNotebookPage() {
         editToken: data.editToken,
         createdAt: data.notebook.created_at,
       });
+
+      track({
+        name: "notebook_created",
+        props: {
+          source: "new",
+          page_count: 1,
+          has_password: Boolean(password.trim()),
+          expiry_days: expiryDays,
+          open_edit: openEdit,
+          font,
+          paper: texture,
+          custom_slug: slugTouched,
+        },
+      });
+
       setCreated({ editUrl: data.editUrl, viewUrl: data.viewUrl });
     } catch {
       setError("Could not reach the server. Try again.");

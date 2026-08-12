@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Check, Copy, Loader2, Settings2 } from "lucide-r
 import { saveNotebook } from "@/lib/local-storage";
 import { deriveTitle } from "@/lib/templates";
 import { DEFAULT_EXPIRY_DAYS } from "@/lib/expiry";
+import { track } from "@/lib/analytics";
 
 export default function QuickSharePage() {
   const [text, setText] = useState("");
@@ -49,6 +50,18 @@ export default function QuickSharePage() {
         editToken: data.editToken,
         createdAt: data.notebook.created_at,
       });
+
+      track({
+        name: "notebook_created",
+        props: {
+          source: "quick",
+          page_count: 1,
+          has_password: false,
+          expiry_days: DEFAULT_EXPIRY_DAYS,
+          open_edit: openEdit,
+        },
+      });
+
       setResult({ viewUrl: data.viewUrl, editUrl: data.editUrl });
 
       // Put the shareable link on the clipboard straight away.

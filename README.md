@@ -78,6 +78,28 @@ Opening a notebook for public editing lets visitors change *content*. Settings,
 expiry and deletion always require the edit token, so a visitor can't lock the
 owner out.
 
+## Analytics
+
+Optional, and off unless `NEXT_PUBLIC_POSTHOG_KEY` is set — a fork or a local
+checkout never phones home.
+
+Two restrictions matter, because people write private things here:
+
+- **Autocapture is off.** It records the text of elements people click, which on
+  a notebook page is their own writing.
+- **Session recording is off at startup** and only switched on for the marketing
+  pages, by `components/AnalyticsRouteGuard.tsx`. A replay of the editor would be
+  a recording of somebody typing a private note. The failure mode of that guard
+  not running is no recording at all, rather than recording a notebook.
+
+Events live in `lib/analytics.ts` as a typed union. The properties carry counts
+and settings only — never note content, titles, slugs, or edit tokens. An edit
+token is a write credential, so putting one in an analytics payload would hand
+notebook control to a third party.
+
+Persistence is memory-only, so no cookie is set and no consent banner is needed.
+The trade is that a returning visitor counts as new.
+
 ## Design
 
 Paper and ink: Kalam and Architects Daughter, taped sticky-note cards, and a red

@@ -52,6 +52,7 @@ import { expiryLabel, expiringSoon } from "@/lib/expiry";
 import { fontClass } from "@/lib/fonts";
 import { formatDate } from "@/lib/format";
 import { buildAnchors, mapScroll, type Anchor } from "@/lib/scroll-sync";
+import { track } from "@/lib/analytics";
 import type { Notebook, Page } from "@/lib/types";
 
 type ViewMode = "write" | "split" | "read";
@@ -319,6 +320,7 @@ export default function NotebookEditor({
     if (res.ok && data.page) {
       setPages((prev) => sortPages([...prev, data.page]));
       selectPage(data.page);
+      track({ name: "page_added", props: { template: tpl.id } });
       toast("Page added", "success");
     } else {
       toast(data.error ?? "Could not add the page", "error");
@@ -535,7 +537,10 @@ export default function NotebookEditor({
                     href={`/n/${notebook.slug}/print`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => setDownloadMenu(false)}
+                    onClick={() => {
+                      track({ name: "export_started", props: { format: "pdf" } });
+                      setDownloadMenu(false);
+                    }}
                     className="flex items-start gap-2.5 px-3 py-2 hover:bg-[var(--paper-2)]"
                   >
                     <FileText size={14} className="mt-0.5 shrink-0" />
@@ -549,7 +554,10 @@ export default function NotebookEditor({
                   <a
                     href={`/api/export/${notebook.slug}`}
                     download
-                    onClick={() => setDownloadMenu(false)}
+                    onClick={() => {
+                      track({ name: "export_started", props: { format: "markdown" } });
+                      setDownloadMenu(false);
+                    }}
                     className="flex items-start gap-2.5 px-3 py-2 hover:bg-[var(--paper-2)]"
                   >
                     <FileCode size={14} className="mt-0.5 shrink-0" />

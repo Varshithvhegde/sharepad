@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import AnalyticsRouteGuard from "@/components/AnalyticsRouteGuard";
 import {
   Architects_Daughter,
   Inter,
@@ -122,6 +124,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#main" className="skip-link">
           Skip to content
         </a>
+        <Suspense fallback={null}>
+          <AnalyticsRouteGuard />
+        </Suspense>
         {children}
         <script
           type="application/ld+json"

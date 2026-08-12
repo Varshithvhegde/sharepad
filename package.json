@@ -15,6 +15,7 @@
     "lucide-react": "^1.31.0",
     "nanoid": "^6.0.1",
     "next": "16.3.0",
+    "posthog-js": "^1.415.6",
     "qrcode.react": "^4.2.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -31,6 +32,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "posthog-cli": "^0.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

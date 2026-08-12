@@ -7,6 +7,7 @@ import { removeSavedNotebook } from "@/lib/local-storage";
 import { EXPIRY_OPTIONS, daysUntil, expiryLabel } from "@/lib/expiry";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { track } from "@/lib/analytics";
 import type { Notebook, NotebookFont, NotebookVisibility, PaperTexture } from "@/lib/types";
 
 interface SettingsPanelProps {
@@ -80,6 +81,16 @@ export default function SettingsPanel({
         setError(data.error ?? "Those settings didn't save");
         return;
       }
+      track({
+        name: "settings_saved",
+        props: {
+          changed_expiry: expiryDays !== undefined,
+          changed_password: clearPassword || Boolean(password.trim()),
+          changed_visibility: visibility !== notebook.visibility,
+          open_edit: publicEdit,
+        },
+      });
+
       onUpdate(data.notebook);
       onClose();
     } finally {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, Download, ExternalLink, X } from "lucide-react";
 import { expiryLabel } from "@/lib/expiry";
+import { track } from "@/lib/analytics";
 import type { Notebook } from "@/lib/types";
 
 interface SharePanelProps {
@@ -24,6 +25,7 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
     navigator.clipboard.writeText(text);
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
+    track({ name: "notebook_shared", props: { via: "copy_link" } });
   }
 
   // Visitors to an openly editable notebook can share it, but they hold no
@@ -139,7 +141,12 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
               </div>
             )}
 
-            <a href={`/api/export/${notebook.slug}`} download className="btn btn-ink w-full">
+            <a
+              href={`/api/export/${notebook.slug}`}
+              download
+              onClick={() => track({ name: "export_started", props: { format: "markdown" } })}
+              className="btn btn-ink w-full"
+            >
               <Download size={15} /> Download every page
             </a>
           </div>
