@@ -43,6 +43,24 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
+## How expiry works
+
+Choosing a lifetime stores an absolute timestamp, not a countdown. The moment it
+passes, the view and print links return the 404 page.
+
+A nightly `pg_cron` job then deletes the row for real, taking its pages, drafts
+and comments with it through cascading foreign keys. It waits three days past
+expiry before doing so: readers lose access immediately, but the owner keeps a
+window to open the edit link and push the date back. Read-once notebooks are
+removed a day after they are opened.
+
+```sql
+select cron.schedule(
+  'purge-expired-notebooks', '15 3 * * *',
+  $$select public.purge_expired_notebooks()$$
+);
+```
+
 ## How ownership works
 
 There are no accounts. Creating a notebook mints a 32-byte edit token; only its
