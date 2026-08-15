@@ -5,9 +5,12 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import type { PluggableList } from "unified";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { headingId } from "@/lib/notebooks";
 import { markdownSchema } from "@/lib/markdown-schema";
 
@@ -54,18 +57,20 @@ const COMPONENTS = {
   },
 };
 
-const REMARK = [remarkGfm];
+const REMARK = [remarkGfm, remarkMath];
 
 /*
  * Order matters. Raw HTML is parsed into the tree first, then everything
  * dangerous is stripped, and only then is highlighting applied — so the classes
  * the highlighter adds are not themselves subject to sanitising, and no
- * unsanitised node ever reaches the output.
+ * unsanitised node ever reaches the output. KaTeX runs last: it turns math
+ * nodes into trusted markup from the library, not raw author HTML.
  */
 const REHYPE: PluggableList = [
   rehypeRaw,
   [rehypeSanitize, markdownSchema],
   rehypeHighlight,
+  rehypeKatex,
 ];
 
 function MarkdownPreview({

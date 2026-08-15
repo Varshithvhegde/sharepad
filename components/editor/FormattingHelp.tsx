@@ -40,6 +40,15 @@ const SECTIONS: { title: string; note?: string; entries: Entry[] }[] = [
     ],
   },
   {
+    title: "Math",
+    note: "Rendered with KaTeX. Escape a literal dollar sign as \\$.",
+    entries: [
+      { syntax: "$E = mc^2$", does: "Inline equation" },
+      { syntax: "$$\\int_0^1 x^2\\,dx = \\frac{1}{3}$$", does: "Block equation, centred on its own line" },
+      { syntax: "$\\frac{a}{b}$", does: "Fractions, Greek letters, subscripts and superscripts" },
+    ],
+  },
+  {
     title: "HTML",
     note: "Handy tags markdown has no shorthand for. Scripts, styles, iframes and forms are removed before anyone sees the page.",
     entries: [

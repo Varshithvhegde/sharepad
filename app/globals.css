@@ -478,6 +478,17 @@ button {
   accent-color: var(--red);
 }
 
+/* KaTeX — long equations scroll instead of clipping the page */
+.markdown-body .katex-display {
+  margin: 1em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2em 0;
+}
+.markdown-body .katex {
+  font-size: 1.05em;
+}
+
 /* Blog posts use serif body text but keep code in mono */
 .blog-article .markdown-body {
   font-size: 1.02rem;
@@ -548,7 +559,7 @@ button {
 }
 .print-document .markdown-body :is(th, td) { border: 1px solid #c8c8c8; }
 .print-document .markdown-body th { background: #f2f2f2; }
-.print-document .markdown-body :is(img, table, pre) {
+.print-document .markdown-body :is(img, table, pre, .katex-display) {
   page-break-inside: avoid;
   break-inside: avoid;
 }
