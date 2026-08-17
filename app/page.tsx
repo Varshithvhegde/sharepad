@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Trash2, X } from "lucide-react";
 import { removeSavedNotebook, useSavedNotebooks } from "@/lib/local-storage";
 import SiteHeader from "@/components/marketing/SiteHeader";
+import { ProductHuntEmbedCard } from "@/components/marketing/ProductHuntBadges";
 import SiteFooter from "@/components/marketing/SiteFooter";
 import SupportSection from "@/components/marketing/SupportSection";
 import FaqSection from "@/components/marketing/FaqSection";
@@ -350,6 +351,10 @@ export default function HomePage() {
       </section>
 
       <FaqSection />
+
+      <section className="max-w-5xl mx-auto px-5 py-12 flex justify-center">
+        <ProductHuntEmbedCard />
+      </section>
 
       <SupportSection />
 

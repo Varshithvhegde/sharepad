@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProductHuntBadges } from "@/components/marketing/ProductHuntBadges";
 import { USE_CASES } from "@/lib/use-cases";
 import { GITHUB_REPO } from "@/lib/site";
 
@@ -73,6 +74,16 @@ export default function SiteFooter() {
             </li>
           </ul>
         </div>
+      </div>
+
+      <div
+        className="max-w-5xl mx-auto mt-10 pt-8 flex flex-col items-center gap-2"
+        style={{ borderTop: "1.5px dashed var(--rule)" }}
+      >
+        <p className="text-[0.82rem]" style={{ color: "var(--ink-3)" }}>
+          Launched on Product Hunt
+        </p>
+        <ProductHuntBadges />
       </div>
     </footer>
   );
