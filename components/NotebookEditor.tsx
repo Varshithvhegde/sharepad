@@ -403,6 +403,13 @@ export default function NotebookEditor({
     }
   }
 
+  function copyPageLink(page: Page) {
+    const url = absolutePageUrl(window.location.origin, notebook.slug, page.slug, "view");
+    navigator.clipboard.writeText(url);
+    track({ name: "notebook_shared", props: { via: "page_link" } });
+    toast("Page link copied", "success");
+  }
+
   async function deletePage(page: Page) {
     if (pages.length <= 1) {
       toast("A notebook needs at least one page", "error");
@@ -777,6 +784,14 @@ export default function NotebookEditor({
                             <Files size={12} />
                           </button>
                           <button
+                            onClick={() => copyPageLink(page)}
+                            className="btn-ghost !px-1 !py-0.5"
+                            title="Copy link to this page"
+                            aria-label="Copy link to this page"
+                          >
+                            <LinkIcon size={12} />
+                          </button>
+                          <button
                             onClick={() => deletePage(page)}
                             className="btn-ghost !px-1 !py-0.5 ml-auto"
                             title="Delete"
@@ -954,17 +969,7 @@ export default function NotebookEditor({
               {activePage && (
                 <Tooltip label="Copy link to this page">
                   <button
-                    onClick={() => {
-                      const url = absolutePageUrl(
-                        window.location.origin,
-                        notebook.slug,
-                        activePage.slug,
-                        "view"
-                      );
-                      navigator.clipboard.writeText(url);
-                      track({ name: "notebook_shared", props: { via: "page_link" } });
-                      toast("Page link copied", "success");
-                    }}
+                    onClick={() => copyPageLink(activePage)}
                     className="btn-ghost !px-1.5"
                     aria-label="Copy link to this page"
                   >
