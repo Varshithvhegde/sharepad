@@ -255,7 +255,15 @@ export default function NotebookEditor({
         });
         const data = await res.json();
         if (res.ok && data.page) {
+          const previous = pages.find((p) => p.id === pageId);
           setPages((prev) => sortPages(prev.map((p) => (p.id === pageId ? data.page : p))));
+          if (previous && data.page.slug !== previous.slug) {
+            const target =
+              editToken
+                ? notebookEditPath(editToken, data.page.slug)
+                : notebookViewPath(notebook.slug, data.page.slug);
+            if (pathname !== target) router.replace(target, { scroll: false });
+          }
           setSaveStatus("saved");
           setTimeout(() => setSaveStatus("idle"), 1800);
           return true;
@@ -267,7 +275,7 @@ export default function NotebookEditor({
       setSaveStatus("idle");
       return false;
     },
-    [authHeaders, isEdit, toast]
+    [authHeaders, isEdit, toast, pages, editToken, notebook.slug, pathname, router]
   );
 
   useEffect(() => {

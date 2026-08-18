@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireContentAccess } from "@/lib/api-auth";
 import { isValidSlug } from "@/lib/slug";
+import { maybeAutoUpdatePageSlug } from "@/lib/page-slugs";
 import type { UpdatePageInput } from "@/lib/types";
 
 type Params = { params: Promise<{ id: string }> };
@@ -29,6 +30,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const body = (await req.json()) as UpdatePageInput;
   const updates: Record<string, unknown> = {};
 
+  const admin = createAdminClient();
+
   if (body.title !== undefined) updates.title = body.title.trim();
   if (body.content !== undefined) updates.content = body.content;
   if (body.icon !== undefined) updates.icon = body.icon;
@@ -41,9 +44,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
     }
     updates.slug = slug;
+  } else if (body.title !== undefined) {
+    const nextSlug = await maybeAutoUpdatePageSlug(
+      admin,
+      auth.page.notebook_id as string,
+      auth.page,
+      body.title.trim(),
+      false
+    );
+    if (nextSlug) updates.slug = nextSlug;
   }
-
-  const admin = createAdminClient();
 
   // Snapshot the previous text before overwriting it, trimming the oldest.
   if (body.content !== undefined && body.content !== auth.page.content) {

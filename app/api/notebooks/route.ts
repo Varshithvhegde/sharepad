@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     await admin.from("pages").insert(
       pages.map((p, i) => ({
         notebook_id: notebook.id,
-        slug: generatePageSlug(p.title) + (i > 0 ? `-${i}` : ""),
+        slug: generatePageSlug(p.title),
         title: p.title,
         icon: p.icon || DEFAULT_PAGE_ICON,
         content: p.content || "",

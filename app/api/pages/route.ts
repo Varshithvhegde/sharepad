@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireContentAccess } from "@/lib/api-auth";
 import { generatePageSlug, isValidSlug } from "@/lib/slug";
+import { pickUniquePageSlug } from "@/lib/page-slugs";
 import { DEFAULT_PAGE_ICON } from "@/lib/icons";
 import type { CreatePageInput } from "@/lib/types";
 
@@ -45,26 +46,26 @@ export async function POST(req: NextRequest) {
 
   const sortOrder = (last?.[0]?.sort_order ?? -1) + 1;
 
-  // Page links are unique per notebook, so retry once with a random suffix.
-  for (const slug of [requested || generatePageSlug(title), generatePageSlug()]) {
-    const { data, error } = await admin
-      .from("pages")
-      .insert({
-        notebook_id: access.notebook.id,
-        slug,
-        title,
-        content: body.content || "",
-        icon: body.icon || DEFAULT_PAGE_ICON,
-        sort_order: sortOrder,
-      })
-      .select("*")
-      .single();
+  const slug = requested
+    ? await pickUniquePageSlug(admin, access.notebook.id, requested)
+    : await pickUniquePageSlug(admin, access.notebook.id, generatePageSlug(title));
 
-    if (!error) return NextResponse.json({ page: data });
-    if (error.code !== "23505") {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  const { data, error } = await admin
+    .from("pages")
+    .insert({
+      notebook_id: access.notebook.id,
+      slug,
+      title,
+      content: body.content || "",
+      icon: body.icon || DEFAULT_PAGE_ICON,
+      sort_order: sortOrder,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ error: "Could not add the page" }, { status: 500 });
+  return NextResponse.json({ page: data });
 }
