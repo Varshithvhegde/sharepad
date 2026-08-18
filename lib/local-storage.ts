@@ -6,6 +6,21 @@ import type { SavedNotebook } from "./types";
 const KEY = "sharepad_notebooks";
 const CHANGED = "sharepad:notebooks-changed";
 
+/** Hard cap — localStorage is not meant to hold a library of hundreds. */
+export const MAX_SAVED_NOTEBOOKS = 50;
+
+/** How many cards the home page shows before "Show more". */
+export const SAVED_NOTEBOOKS_PAGE_SIZE = 6;
+
+function sortSavedNotebooks(notebooks: SavedNotebook[]): SavedNotebook[] {
+  return [...notebooks].sort((a, b) => {
+    const aPin = Boolean(a.pinned);
+    const bPin = Boolean(b.pinned);
+    if (aPin !== bPin) return aPin ? -1 : 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
 /*
  * localStorage is an external store, so it is read through useSyncExternalStore
  * rather than copied into state inside an effect. Besides satisfying the rules
@@ -22,7 +37,7 @@ function readStore(): SavedNotebook[] {
   if (raw !== cachedRaw) {
     cachedRaw = raw;
     try {
-      cached = raw ? (JSON.parse(raw) as SavedNotebook[]) : [];
+      cached = raw ? sortSavedNotebooks(JSON.parse(raw) as SavedNotebook[]) : [];
     } catch {
       cached = [];
     }
@@ -63,8 +78,22 @@ export function getSavedNotebooks(): SavedNotebook[] {
 
 export function saveNotebook(entry: SavedNotebook): void {
   if (typeof window === "undefined") return;
+  const existing = getSavedNotebooks().find((n) => n.editToken === entry.editToken);
+  const merged: SavedNotebook = {
+    ...entry,
+    pinned: entry.pinned ?? existing?.pinned ?? false,
+  };
   const rest = getSavedNotebooks().filter((n) => n.editToken !== entry.editToken);
-  writeStore([entry, ...rest].slice(0, 50));
+  writeStore(sortSavedNotebooks([merged, ...rest]).slice(0, MAX_SAVED_NOTEBOOKS));
+}
+
+export function togglePinSavedNotebook(editToken: string): void {
+  if (typeof window === "undefined") return;
+  writeStore(
+    getSavedNotebooks().map((n) =>
+      n.editToken === editToken ? { ...n, pinned: !n.pinned } : n
+    )
+  );
 }
 
 export function removeSavedNotebook(slug: string, editToken?: string): void {

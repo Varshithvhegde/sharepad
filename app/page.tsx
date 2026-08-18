@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Trash2, X } from "lucide-react";
-import { removeSavedNotebook, useSavedNotebooks } from "@/lib/local-storage";
+import { ArrowRight, ChevronDown, Pin, Trash2, X } from "lucide-react";
+import {
+  MAX_SAVED_NOTEBOOKS,
+  removeSavedNotebook,
+  SAVED_NOTEBOOKS_PAGE_SIZE,
+  togglePinSavedNotebook,
+  useSavedNotebooks,
+} from "@/lib/local-storage";
 import SiteHeader from "@/components/marketing/SiteHeader";
 import { ProductHuntEmbedCard } from "@/components/marketing/ProductHuntBadges";
 import SiteFooter from "@/components/marketing/SiteFooter";
@@ -74,6 +80,11 @@ const capabilities = [
 export default function HomePage() {
   const saved = useSavedNotebooks();
   const [deletedNotice, setDeletedNotice] = useState(false);
+  const [visibleSaved, setVisibleSaved] = useState(SAVED_NOTEBOOKS_PAGE_SIZE);
+
+  useEffect(() => {
+    setVisibleSaved((n) => Math.min(n, Math.max(SAVED_NOTEBOOKS_PAGE_SIZE, saved.length)));
+  }, [saved.length]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -188,11 +199,12 @@ export default function HomePage() {
             Back to your desk
           </h2>
           <p className="text-[0.9rem] mb-5" style={{ color: "var(--ink-2)" }}>
-            Edit links this browser remembers.
+            Edit links this browser remembers — up to {MAX_SAVED_NOTEBOOKS} on this device.
+            {saved.some((n) => n.pinned) && " Pinned ones stay on top."}
           </p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {saved.map((nb, i) => (
+            {saved.slice(0, visibleSaved).map((nb, i) => (
               <div key={nb.editToken} className="relative">
                 <span
                   className={`tape tape-${["y", "b", "p", "g"][i % 4]}`}
@@ -212,27 +224,60 @@ export default function HomePage() {
                   <div className="sk-i p-5 pt-6">
                     <Link href={`/e/${nb.editToken}`} className="block">
                       <h3
-                        className="text-[1.15rem] leading-tight mb-1"
+                        className="text-[1.15rem] leading-tight mb-1 flex items-center gap-1.5"
                         style={{ fontFamily: "var(--font-sketch), serif" }}
                       >
-                        {nb.title}
+                        <span className="truncate">{nb.title}</span>
+                        {nb.pinned && (
+                          <Pin size={13} className="shrink-0" style={{ color: "var(--red)" }} aria-hidden />
+                        )}
                       </h3>
                       <p className="text-[0.8rem]" style={{ color: "var(--ink-2)" }}>
                         Opens straight into editing
                       </p>
                     </Link>
-                <button
-                  onClick={() => removeSavedNotebook(nb.slug, nb.editToken)}
-                      className="btn-ghost mt-3 !px-2 !py-1 text-[0.78rem]"
-                      title="Forget this link on this browser"
-                    >
-                      <Trash2 size={12} /> Forget
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                      <button
+                        type="button"
+                        onClick={() => togglePinSavedNotebook(nb.editToken)}
+                        className="btn-ghost !px-2 !py-1 text-[0.78rem]"
+                        title={nb.pinned ? "Unpin from the top" : "Pin to the top of this list"}
+                        aria-pressed={Boolean(nb.pinned)}
+                      >
+                        <Pin
+                          size={12}
+                          className="inline mr-0.5"
+                          style={nb.pinned ? { color: "var(--red)", fill: "var(--red-soft)" } : undefined}
+                        />
+                        {nb.pinned ? "Unpin" : "Pin"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeSavedNotebook(nb.slug, nb.editToken)}
+                        className="btn-ghost !px-2 !py-1 text-[0.78rem]"
+                        title="Forget this link on this browser"
+                      >
+                        <Trash2 size={12} className="inline mr-0.5" /> Forget
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          {saved.length > visibleSaved && (
+            <div className="mt-7 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setVisibleSaved((n) => n + SAVED_NOTEBOOKS_PAGE_SIZE)}
+                className="btn text-[0.92rem]"
+              >
+                <ChevronDown size={15} />
+                Show more ({saved.length - visibleSaved} remaining)
+              </button>
+            </div>
+          )}
         </section>
       )}
 

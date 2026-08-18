@@ -60,6 +60,8 @@ export interface SavedNotebook {
   title: string;
   editToken: string;
   createdAt: string;
+  /** Pinned notebooks stay at the top of Back to your desk on this device. */
+  pinned?: boolean;
 }
 
 export interface CreateNotebookInput {
