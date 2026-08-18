@@ -16,6 +16,18 @@ export function sortPages(pages: Page[]): Page[] {
   });
 }
 
+export function findPageBySlug(pages: Page[], pageSlug: string): Page | undefined {
+  return pages.find((p) => p.slug === pageSlug.toLowerCase());
+}
+
+export function resolveInitialPage(pages: Page[], pageSlug?: string): Page | undefined {
+  const sorted = sortPages(pages);
+  if (pageSlug) {
+    return findPageBySlug(sorted, pageSlug) ?? sorted[0];
+  }
+  return sorted[0];
+}
+
 /** Slugifies heading text so preview anchors and the contents list agree. */
 export function headingId(text: string): string {
   return text

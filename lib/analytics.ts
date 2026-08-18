@@ -13,7 +13,7 @@ export type AnalyticsEvent =
   | { name: "page_added"; props: { template: string } }
   | { name: "page_duplicated"; props: Record<string, never> }
   | { name: "page_deleted"; props: Record<string, never> }
-  | { name: "notebook_shared"; props: { via: "copy_link" | "qr_code" } }
+  | { name: "notebook_shared"; props: { via: "copy_link" | "qr_code" | "page_link" } }
   | { name: "export_started"; props: { format: "pdf" | "markdown" } }
   | { name: "settings_saved"; props: SettingsSavedProps }
   | { name: "notebook_deleted"; props: Record<string, never> }

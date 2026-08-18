@@ -4,23 +4,37 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, Download, ExternalLink, X } from "lucide-react";
 import { expiryLabel } from "@/lib/expiry";
+import { absolutePageUrl, notebookEditPath, notebookViewPath } from "@/lib/page-urls";
 import { track } from "@/lib/analytics";
 import { ItemIcon } from "@/lib/icons";
-import type { Notebook } from "@/lib/types";
+import type { Notebook, Page } from "@/lib/types";
 
 interface SharePanelProps {
   notebook: Notebook;
   editToken: string;
+  activePage?: Page | null;
   onClose: () => void;
 }
 
-export default function SharePanel({ notebook, editToken, onClose }: SharePanelProps) {
+export default function SharePanel({
+  notebook,
+  editToken,
+  activePage,
+  onClose,
+}: SharePanelProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const viewUrl = `${origin}/n/${notebook.slug}`;
-  const editUrl = `${origin}/e/${editToken}`;
+  const viewUrl = `${origin}${notebookViewPath(notebook.slug)}`;
+  const editUrl = `${origin}${notebookEditPath(editToken)}`;
+  const pageViewUrl = activePage
+    ? absolutePageUrl(origin, notebook.slug, activePage.slug, "view")
+    : null;
+  const pageEditUrl =
+    activePage && editToken
+      ? absolutePageUrl(origin, notebook.slug, activePage.slug, "edit", editToken)
+      : null;
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text);
@@ -126,6 +140,73 @@ export default function SharePanel({ notebook, editToken, onClose }: SharePanelP
                 </div>
               </div>
             ))}
+
+            {activePage && pageViewUrl && (
+              <div className="mb-5 pt-2" style={{ borderTop: "1.5px dashed rgba(28,28,28,0.14)" }}>
+                <p
+                  className="text-[0.82rem] mb-3"
+                  style={{ color: "var(--ink-2)" }}
+                >
+                  This page only — opens on “{activePage.title}”
+                </p>
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2 mb-1.5">
+                    <span
+                      className="text-[0.88rem] px-2"
+                      style={{ background: "var(--sticky-g)", border: "1.2px solid rgba(28,28,28,0.2)" }}
+                    >
+                      Page view link
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      readOnly
+                      value={pageViewUrl}
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                      aria-label="Page view link"
+                      className="field text-[0.76rem] !py-2"
+                      style={{ fontFamily: "ui-monospace, monospace" }}
+                    />
+                    <button
+                      onClick={() => copy(pageViewUrl, "page-view")}
+                      className="btn !px-3 shrink-0"
+                      title="Copy"
+                    >
+                      {copied === "page-view" ? <Check size={15} /> : <Copy size={15} />}
+                    </button>
+                  </div>
+                </div>
+                {pageEditUrl && (
+                  <div>
+                    <div className="flex items-baseline gap-2 mb-1.5">
+                      <span
+                        className="text-[0.88rem] px-2"
+                        style={{ background: "var(--sticky-o)", border: "1.2px solid rgba(28,28,28,0.2)" }}
+                      >
+                        Page edit link
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        readOnly
+                        value={pageEditUrl}
+                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                        aria-label="Page edit link"
+                        className="field text-[0.76rem] !py-2"
+                        style={{ fontFamily: "ui-monospace, monospace" }}
+                      />
+                      <button
+                        onClick={() => copy(pageEditUrl, "page-edit")}
+                        className="btn !px-3 shrink-0"
+                        title="Copy"
+                      >
+                        {copied === "page-edit" ? <Check size={15} /> : <Copy size={15} />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {!editToken && (
               <p

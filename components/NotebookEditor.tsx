@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowDownUp,
   Check,
@@ -34,6 +35,7 @@ import {
   Upload,
   Users,
   X,
+  Link as LinkIcon,
 } from "lucide-react";
 import MarkdownPreview from "@/components/MarkdownPreview";
 import TableOfContents from "@/components/TableOfContents";
@@ -46,7 +48,8 @@ import FormattingHelp from "@/components/editor/FormattingHelp";
 import { ToastContainer, useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Tooltip from "@/components/ui/Tooltip";
-import { sortPages } from "@/lib/notebooks";
+import { sortPages, resolveInitialPage } from "@/lib/notebooks";
+import { absolutePageUrl, notebookEditPath, notebookViewPath } from "@/lib/page-urls";
 import { saveNotebook, useStoredFlag } from "@/lib/local-storage";
 import { PAGE_TEMPLATES } from "@/lib/templates";
 import { ItemIcon, PAGE_ICON_IDS, iconLabel } from "@/lib/icons";
@@ -77,6 +80,8 @@ interface NotebookEditorProps {
   pages: Page[];
   editToken: string;
   mode: "edit" | "view";
+  /** Open this page first — from /n/{slug}/{page} or /e/{token}/{page}. */
+  initialPageSlug?: string;
 }
 
 function readingStats(text: string) {
@@ -89,12 +94,17 @@ export default function NotebookEditor({
   pages: initialPages,
   editToken,
   mode,
+  initialPageSlug,
 }: NotebookEditorProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [notebook, setNotebook] = useState(initialNotebook);
   const [pages, setPages] = useState(() => sortPages(initialPages));
-  const [activePageId, setActivePageId] = useState(pages[0]?.id ?? "");
-  const [content, setContent] = useState(pages[0]?.content ?? "");
-  const [title, setTitle] = useState(pages[0]?.title ?? "");
+  const bootPage = resolveInitialPage(initialPages, initialPageSlug);
+  const [activePageId, setActivePageId] = useState(bootPage?.id ?? "");
+  const [content, setContent] = useState(bootPage?.content ?? "");
+  const [title, setTitle] = useState(bootPage?.title ?? "");
   const [viewMode, setViewMode] = useState<ViewMode>("split");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -172,16 +182,26 @@ export default function NotebookEditor({
     );
   }, [pages, search]);
 
-  const selectPage = useCallback((page: Page) => {
-    setActivePageId(page.id);
-    setContent(page.content);
-    setTitle(page.title);
-    setSidebarOpen(false);
-    // Start a new page at the top rather than wherever the last one was left.
-    scrollLead.current = null;
-    if (textareaRef.current) textareaRef.current.scrollTop = 0;
-    if (previewRef.current) previewRef.current.scrollTop = 0;
-  }, []);
+  const selectPage = useCallback(
+    (page: Page) => {
+      setActivePageId(page.id);
+      setContent(page.content);
+      setTitle(page.title);
+      setSidebarOpen(false);
+      scrollLead.current = null;
+      if (textareaRef.current) textareaRef.current.scrollTop = 0;
+      if (previewRef.current) previewRef.current.scrollTop = 0;
+
+      const target =
+        mode === "edit" && editToken
+          ? notebookEditPath(editToken, page.slug)
+          : notebookViewPath(notebook.slug, page.slug);
+      if (pathname !== target) {
+        router.replace(target, { scroll: false });
+      }
+    },
+    [mode, editToken, notebook.slug, pathname, router]
+  );
 
   const mirrorScroll = useCallback(
     (from: "editor" | "preview") => {
@@ -923,6 +943,27 @@ export default function NotebookEditor({
                   <Copy size={14} />
                 </button>
               </Tooltip>
+              {activePage && (
+                <Tooltip label="Copy link to this page">
+                  <button
+                    onClick={() => {
+                      const url = absolutePageUrl(
+                        window.location.origin,
+                        notebook.slug,
+                        activePage.slug,
+                        "view"
+                      );
+                      navigator.clipboard.writeText(url);
+                      track({ name: "notebook_shared", props: { via: "page_link" } });
+                      toast("Page link copied", "success");
+                    }}
+                    className="btn-ghost !px-1.5"
+                    aria-label="Copy link to this page"
+                  >
+                    <LinkIcon size={14} />
+                  </button>
+                </Tooltip>
+              )}
               <Tooltip label="Print or save as PDF" align="end">
                 <a
                   href={`/n/${notebook.slug}/print`}
@@ -1021,7 +1062,12 @@ export default function NotebookEditor({
       </div>
 
       {shareOpen && (
-        <SharePanel notebook={notebook} editToken={editToken} onClose={() => setShareOpen(false)} />
+        <SharePanel
+          notebook={notebook}
+          editToken={editToken}
+          activePage={activePage ?? null}
+          onClose={() => setShareOpen(false)}
+        />
       )}
       {settingsOpen && (
         <SettingsPanel
